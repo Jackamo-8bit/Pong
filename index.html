@@ -213,6 +213,10 @@ canvas{display:block;}
   <div id="test-pu-btns"></div>
   <div style="margin-top:8px;opacity:.5;">Power-ups (Right player):</div>
   <div id="test-pu-btns-r"></div>
+  <div id="test-surv-section" style="display:none;margin-top:10px;border-top:1px solid #333;padding-top:8px;">
+    <div style="opacity:.5;margin-bottom:4px;">Survival Power-ups:</div>
+    <div id="test-surv-btns"></div>
+  </div>
   <div style="margin-top:10px;border-top:1px solid #333;padding-top:8px;">
     <div style="opacity:.5;margin-bottom:4px;">Utilities:</div>
     <button class="test-btn" onclick="testClearPU()">Clear Power-up</button>
@@ -433,7 +437,8 @@ const POWER_UPS={
   fireball:   {name:'FIREBALL',    desc:'Ball burns through!',    icon:'🔥',color:'#f97316',duration:5000},
   shrinkrow:  {name:'SHRINK ROW',  desc:'Bottom row vanishes!',   icon:'💨',color:'#a78bfa',duration:0},
 };
-const PU_KEYS=Object.keys(POWER_UPS);
+const SURV_ONLY_PUS=new Set(['laser','freeze','bomb','multiball','survslowmo','magnetpaddle','fireball','shrinkrow']);
+const PU_KEYS=Object.keys(POWER_UPS).filter(k=>!SURV_ONLY_PUS.has(k));
 const POWERUP_SPAWN_INTERVAL=9000, POWERUP_LIFESPAN=11000;
 const CHAOS_SPAWN_INTERVAL=2000;
 
@@ -444,6 +449,7 @@ let gameMode='classic';
 function setGameMode(m){
   gameMode=m;
   document.querySelectorAll('#gamemode-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.gm===m));
+  if(typeof updateTestPanelForMode==='function')updateTestPanelForMode();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -677,7 +683,10 @@ function spawnPuParticles(x,y){
 }
 function updateParticles(){
   for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life-=p.decay;
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;
+    p.vy+=p.isDebris?.12:.05; // debris falls faster
+    if(p.isDebris&&p.rot!=null)p.rot+=p.rotSpd;
+    p.life-=p.decay;
     if(p.life<=0)particles.splice(i,1);
   }
 }
@@ -687,7 +696,8 @@ function drawParticles(){
     ctx.globalAlpha=p.life*.75;
     ctx.fillStyle=p.brickColor?p.brickColor:(sk.chaos||p.isPu)?`hsl(${p.hue},100%,60%)`:sk.particleColor(p.life);
     ctx.beginPath();
-    if(sk.chaos&&!p.isPu&&!p.brickColor){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.life*5);ctx.fillRect(-p.size*p.life,-p.size*p.life,p.size*p.life*2,p.size*p.life*2);ctx.restore();}
+    if(p.isDebris){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);const s=p.life;ctx.fillRect(-p.w*s/2,-p.h*s/2,p.w*s,p.h*s);ctx.restore();}
+    else if(sk.chaos&&!p.isPu&&!p.brickColor){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.life*5);ctx.fillRect(-p.size*p.life,-p.size*p.life,p.size*p.life*2,p.size*p.life*2);ctx.restore();}
     else{ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();}
   }
   ctx.globalAlpha=1;
@@ -838,12 +848,11 @@ function checkBrickCollision(ball,bs){
       if(b.hp<=0){
         b.alive=false;
         spawnBrickParticles(b.x+b.w/2,b.y+b.h/2,b.color);
-        // Power-up dropper: always spawn a field power-up at the brick's position
         if(b.btype==='powerup'){
           const type=PU_KEYS[Math.floor(Math.random()*PU_KEYS.length)];
           fieldPowerups.push({type,x:b.x+b.w/2,y:b.y+b.h/2,spawnTime:performance.now(),bobOffset:Math.random()*Math.PI*2});
         }
-      }
+      }else if(b.btype==='cracking'){spawnBrickChips(b);}
       SOUNDS[currentSkin].wall();
       shakeAmt=3;
       return true;
@@ -853,10 +862,94 @@ function checkBrickCollision(ball,bs){
 }
 
 function spawnBrickParticles(x,y,color){
-  for(let i=0;i<10;i++){
+  // Burst of round particles
+  for(let i=0;i<6;i++){
     const angle=Math.random()*Math.PI*2,spd=Math.random()*3+1;
     particles.push({x,y,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1,decay:Math.random()*.06+.04,size:Math.random()*3+1,hue:0,brickColor:color});
   }
+  // Rectangular debris chunks that fall with gravity
+  for(let i=0;i<5;i++){
+    const angle=Math.random()*Math.PI*2,spd=Math.random()*2+.5;
+    particles.push({x:x+(Math.random()-.5)*10,y:y+(Math.random()-.5)*6,vx:Math.cos(angle)*spd,vy:-Math.random()*2-1,life:1,decay:Math.random()*.03+.02,size:Math.random()*3+2,brickColor:color,isDebris:true,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.3,w:Math.random()*5+3,h:Math.random()*3+2});
+  }
+}
+// Small chip particles when a durable brick takes a hit but doesn't break
+function spawnBrickChips(b){
+  const cx=b.x+b.w/2,cy=b.y+b.h/2;
+  const sk=SKINS[currentSkin];
+  const col=b.color;
+  // Small dust puff
+  for(let i=0;i<4;i++){
+    const angle=Math.random()*Math.PI*2,spd=Math.random()*1.5+.5;
+    particles.push({x:cx+(Math.random()-.5)*b.w*.6,y:cy+(Math.random()-.5)*b.h,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1,decay:.07+Math.random()*.04,size:Math.random()*2+1,brickColor:'rgba(200,200,200,.5)'});
+  }
+  // A few falling chips in brick color
+  for(let i=0;i<3;i++){
+    particles.push({x:cx+(Math.random()-.5)*b.w*.5,y:cy+(Math.random()-.5)*b.h,vx:(Math.random()-.5)*2,vy:-Math.random()*1.5-.5,life:1,decay:.025+Math.random()*.02,size:Math.random()*2+1,brickColor:col,isDebris:true,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.4,w:Math.random()*4+2,h:Math.random()*2+1});
+  }
+}
+// Generate random crack paths for a brick (stored on brick, consistent across frames)
+function ensureCracks(b){
+  if(b._cracks)return;
+  b._cracks=[];
+  // Generate 3 sets of cracks (one revealed per hp lost)
+  for(let lvl=0;lvl<3;lvl++){
+    const paths=[];
+    const numCracks=1+Math.floor(Math.random()*2);
+    for(let n=0;n<numCracks;n++){
+      const pts=[];
+      // Start from a random edge or near-center point
+      let sx=Math.random()*b.w,sy=Math.random()*b.h;
+      pts.push({x:sx,y:sy});
+      const segs=2+Math.floor(Math.random()*3);
+      for(let s=0;s<segs;s++){
+        sx+=((Math.random()-.5)*b.w*.4);
+        sy+=((Math.random()-.5)*b.h*.6);
+        sx=Math.max(0,Math.min(b.w,sx));
+        sy=Math.max(0,Math.min(b.h,sy));
+        pts.push({x:sx,y:sy});
+      }
+      paths.push(pts);
+    }
+    b._cracks.push(paths);
+  }
+}
+function drawBrickCracks(b,rounded,rad){
+  ensureCracks(b);
+  const damage=b.maxHp-b.hp;
+  if(damage<=0)return;
+  ctx.save();
+  // Clip to brick shape
+  ctx.beginPath();
+  if(rounded)ctx.roundRect(b.x,b.y,b.w,b.h,rad);
+  else ctx.rect(b.x,b.y,b.w,b.h);
+  ctx.clip();
+  for(let d=0;d<damage&&d<b._cracks.length;d++){
+    const alpha=.35+d*.2; // deeper damage = more visible cracks
+    const width=.8+d*.4;
+    // Dark crack line
+    ctx.strokeStyle=`rgba(0,0,0,${alpha+.1})`;ctx.lineWidth=width+.8;
+    for(const path of b._cracks[d]){
+      ctx.beginPath();
+      ctx.moveTo(b.x+path[0].x,b.y+path[0].y);
+      for(let i=1;i<path.length;i++)ctx.lineTo(b.x+path[i].x,b.y+path[i].y);
+      ctx.stroke();
+    }
+    // Light edge (gives depth)
+    ctx.strokeStyle=`rgba(255,255,255,${alpha*.6})`;ctx.lineWidth=width;
+    for(const path of b._cracks[d]){
+      ctx.beginPath();
+      ctx.moveTo(b.x+path[0].x+.5,b.y+path[0].y+.5);
+      for(let i=1;i<path.length;i++)ctx.lineTo(b.x+path[i].x+.5,b.y+path[i].y+.5);
+      ctx.stroke();
+    }
+  }
+  // Darkening overlay as brick gets more damaged
+  if(damage>=2){
+    ctx.fillStyle=`rgba(0,0,0,${.08*damage})`;
+    ctx.fillRect(b.x,b.y,b.w,b.h);
+  }
+  ctx.restore();
 }
 
 function drawBricks(){
@@ -880,18 +973,9 @@ function drawBricks(){
       }
       ctx.restore();
     }
-    // Cracking: draw crack lines based on damage
+    // Cracking: draw procedural cracks based on damage
     if(b.btype==='cracking'&&b.hp<b.maxHp){
-      ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;
-      const cx=b.x+b.w/2,cy=b.y+b.h/2;
-      if(b.hp<=2){// first crack
-        ctx.beginPath();ctx.moveTo(cx-4,cy-5);ctx.lineTo(cx+2,cy);ctx.lineTo(cx-3,cy+6);ctx.stroke();
-      }
-      if(b.hp<=1){// heavy cracks
-        ctx.beginPath();ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx+1,cy-1);ctx.lineTo(cx+8,cy+4);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(cx-10,cy-2);ctx.lineTo(cx-5,cy+3);ctx.stroke();
-      }
-      ctx.restore();
+      drawBrickCracks(b,rounded,rad);
     }
     ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;
     if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.stroke();}
@@ -1706,18 +1790,21 @@ let survFireball=false;  // fireball: ball passes through bricks
 
 function survBuildRow(y){
   const gap=4,bh=16;
-  const cols=Math.floor((W+gap)/(60+gap)); // fill full width
-  const bw=(W-gap*(cols-1))/cols;           // stretch bricks to fit
+  const cols=Math.floor((W+gap)/(60+gap));
+  const bw=(W-gap*(cols-1))/cols;
   const row=[];
+  // Time-based difficulty: durable bricks ramp up, power-up bricks stay generous
+  const elapsed=survState?(performance.now()-survState.startTime)/1000:0;
+  const crackChance=Math.min(.05+elapsed/300,.35); // 5% at start → 25% at 60s → caps 35%
+  const puChance=.25; // 25% power-up bricks (generous)
   for(let c=0;c<cols;c++){
-    // ~15% chance of a gap (empty space)
     if(Math.random()<.15)continue;
     const roll=Math.random();
     let btype='normal',hp=1,color;
     const sk=SKINS[currentSkin];
     color=sk.brickColors?sk.brickColors[c%sk.brickColors.length]:'#888';
-    if(roll<.20){btype='cracking';color='#8b2252';hp=3;}
-    else if(roll<.35){btype='powerup';color='#daa520';}
+    if(roll<crackChance){btype='cracking';color='#8b2252';hp=3;}
+    else if(roll<crackChance+puChance){btype='powerup';color='#daa520';}
     row.push({x:c*(bw+gap),y,w:bw,h:bh,alive:true,color,btype,hp,maxHp:hp});
   }
   return row;
@@ -1935,6 +2022,7 @@ function survUpdate(){
         if(survBomb){bombExplode(b.x+b.w/2,b.y+b.h/2);}
         else{destroyBrick(b);SOUNDS[currentSkin].wall();}
       }else{
+        if(b.btype==='cracking')spawnBrickChips(b);
         SOUNDS[currentSkin].wall();shakeAmt=1;
       }
       if(!survFireball)break;
@@ -1968,6 +2056,7 @@ function survUpdate(){
         }
         b.hp--;
         if(b.hp<=0){if(survBomb)bombExplode(b.x+b.w/2,b.y+b.h/2);else{destroyBrick(b);SOUNDS[currentSkin].wall();}}
+        else if(b.btype==='cracking'){spawnBrickChips(b);SOUNDS[currentSkin].wall();}
         if(!survFireball)break;
       }
     }
@@ -1993,9 +2082,11 @@ function survUpdate(){
   if(survLaser&&survLaser.active&&now<survLaser.endTime){
     const lx=sv.paddle.x+sv.paddle.w/2;
     const ly=py;
-    // Laser beam particles (smoke/sparks)
-    if(Math.random()<.4){
-      particles.push({x:lx+(Math.random()-0.5)*10,y:ly-Math.random()*20,vx:(Math.random()-.5)*2,vy:-Math.random()*2-1,life:1,decay:.06,size:Math.random()*3+1,hue:200,brickColor:'rgba(100,200,255,.6)'});
+    // Plasma particles (blue + purple)
+    if(Math.random()<.6){
+      const hue=Math.random()<.5?200:280;
+      const col=hue===200?'rgba(100,200,255,.6)':'rgba(180,100,255,.6)';
+      particles.push({x:lx+(Math.random()-0.5)*16,y:ly-Math.random()*25,vx:(Math.random()-.5)*3,vy:-Math.random()*3-1,life:1,decay:.05,size:Math.random()*4+1,hue,brickColor:col});
     }
     // Destroy bricks in beam path (narrow column)
     const beamW=14;
@@ -2004,6 +2095,7 @@ function survUpdate(){
       if(b.x+b.w>lx-beamW/2&&b.x<lx+beamW/2&&b.y<ly&&b.y+b.h>0){
         b.hp--;
         if(b.hp<=0){destroyBrick(b);shakeAmt=Math.min(shakeAmt+1,4);}
+        else if(b.btype==='cracking'&&Math.random()<.3)spawnBrickChips(b);
       }
     }
   }
@@ -2169,15 +2261,9 @@ function survDraw(now){
     ctx.fillStyle=b.color;
     if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.fill();}
     else ctx.fillRect(b.x,b.y,b.w,b.h);
-    // Crack lines for cracking bricks
+    // Cracking: draw procedural cracks based on damage
     if(b.btype==='cracking'&&b.hp<b.maxHp){
-      ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;
-      const cracks=b.maxHp-b.hp;
-      for(let c=0;c<cracks;c++){
-        const cx=b.x+b.w*(.2+c*.3),cy=b.y+b.h*.3;
-        ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+5,cy+b.h*.4);ctx.lineTo(cx-3,cy+b.h*.7);ctx.stroke();
-      }
-      ctx.restore();
+      drawBrickCracks(b,rounded,rad);
     }
     // Gold border for power-up bricks
     if(b.btype==='powerup'){
@@ -2227,27 +2313,62 @@ function survDraw(now){
     }
   }
 
-  // Laser beam from paddle
+  // Laser beam from paddle — plasma effect
   if(survLaser&&survLaser.active&&now<survLaser.endTime){
     const lx=sv.paddle.x+sv.paddle.w/2;
     const ly=py;
-    // Main beam
+    const t=now/1000;
     ctx.save();
-    const beamGrd=ctx.createLinearGradient(lx,0,lx,ly);
-    beamGrd.addColorStop(0,'rgba(0,180,255,0)');
-    beamGrd.addColorStop(.3,'rgba(0,180,255,.7)');
-    beamGrd.addColorStop(1,'rgba(100,220,255,.9)');
-    ctx.fillStyle=beamGrd;ctx.fillRect(lx-7,0,14,ly);
-    // Core bright line
-    ctx.fillStyle='rgba(200,240,255,.8)';ctx.fillRect(lx-2,0,4,ly);
-    // Glow
-    ctx.shadowColor='#00bfff';ctx.shadowBlur=20;
-    ctx.fillStyle='rgba(0,180,255,.4)';ctx.fillRect(lx-10,0,20,ly);
-    // Smoke at base
+    // Wide outer glow (purple)
+    ctx.shadowColor='#a020f0';ctx.shadowBlur=35;
+    ctx.fillStyle='rgba(120,40,200,.15)';ctx.fillRect(lx-18,0,36,ly);
+    ctx.shadowBlur=0;
+    // Animated plasma tendrils (wobbly sine waves)
     for(let i=0;i<3;i++){
-      const smx=lx+(Math.random()-.5)*20,smy=ly-Math.random()*15;
-      ctx.globalAlpha=.2+Math.random()*.2;ctx.fillStyle='rgba(180,220,255,.5)';
-      ctx.beginPath();ctx.arc(smx,smy,3+Math.random()*4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();
+      const phase=i*2.1+t*6;const amp=5+i*3;
+      ctx.moveTo(lx+Math.sin(phase)*amp,0);
+      for(let yy=0;yy<ly;yy+=4){
+        const wx=lx+Math.sin(phase+yy*.04)*amp*Math.sin(t*3+yy*.02);
+        ctx.lineTo(wx,yy);
+      }
+      ctx.strokeStyle=i===0?'rgba(0,180,255,.4)':i===1?'rgba(160,60,255,.35)':'rgba(255,100,255,.25)';
+      ctx.lineWidth=3-i*.5;ctx.stroke();
+    }
+    // Main beam gradient (blue-purple shift)
+    const beamGrd=ctx.createLinearGradient(lx,0,lx,ly);
+    beamGrd.addColorStop(0,'rgba(140,60,255,.1)');
+    beamGrd.addColorStop(.2,'rgba(0,180,255,.6)');
+    beamGrd.addColorStop(.5,'rgba(100,40,220,.5)');
+    beamGrd.addColorStop(.8,'rgba(0,200,255,.7)');
+    beamGrd.addColorStop(1,'rgba(180,100,255,.8)');
+    ctx.fillStyle=beamGrd;ctx.fillRect(lx-8,0,16,ly);
+    // Hot white core (oscillates width)
+    const coreW=2+Math.sin(t*12)*.8;
+    ctx.fillStyle='rgba(220,240,255,.85)';ctx.fillRect(lx-coreW,0,coreW*2,ly);
+    // Plasma particles along beam
+    for(let i=0;i<6;i++){
+      const ppx=lx+(Math.random()-.5)*24;
+      const ppy=Math.random()*ly;
+      const pr=1.5+Math.random()*3;
+      const hue=Math.random()<.5?200:280; // blue or purple
+      ctx.globalAlpha=.3+Math.random()*.4;
+      ctx.fillStyle=`hsl(${hue},100%,${60+Math.random()*30}%)`;
+      ctx.beginPath();ctx.arc(ppx,ppy,pr,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // Impact point glow at paddle
+    const impGrd=ctx.createRadialGradient(lx,ly,0,lx,ly,30);
+    impGrd.addColorStop(0,'rgba(200,180,255,.6)');
+    impGrd.addColorStop(.4,'rgba(100,50,200,.3)');
+    impGrd.addColorStop(1,'rgba(0,100,255,0)');
+    ctx.fillStyle=impGrd;ctx.beginPath();ctx.arc(lx,ly,30,0,Math.PI*2);ctx.fill();
+    // Smoke wisps at base
+    for(let i=0;i<4;i++){
+      const smx=lx+(Math.random()-.5)*28,smy=ly-Math.random()*20;
+      ctx.globalAlpha=.15+Math.random()*.2;
+      ctx.fillStyle=Math.random()<.5?'rgba(180,160,255,.5)':'rgba(100,200,255,.4)';
+      ctx.beginPath();ctx.arc(smx,smy,3+Math.random()*5,0,Math.PI*2);ctx.fill();
     }
     ctx.restore();
   }
@@ -2256,23 +2377,62 @@ function survDraw(now){
   const BS=sv.ball.size||10;
   const bx=sv.ball.x,by=sv.ball.y;
 
-  // Fireball effect — flame trail behind ball
+  // Fireball effect — flame with smoke trail and embers
   if(survFireball){
+    const cx=bx+BS/2,cy=by+BS/2;
+    const vx=sv.ball.vx,vy=sv.ball.vy;
+    const spd=Math.sqrt(vx*vx+vy*vy)||1;
+    const tx=-vx/spd,ty=-vy/spd; // trail direction (opposite velocity)
     ctx.save();
-    for(let i=0;i<4;i++){
-      const fx=bx+BS/2+(Math.random()-.5)*BS*1.2;
-      const fy=by+BS/2+(Math.random()-.5)*BS*1.2;
-      const fr=BS/2+Math.random()*BS*.6;
+    // Smoke trail (grey puffs behind ball)
+    for(let i=0;i<5;i++){
+      const dist=8+i*7+Math.random()*6;
+      const smx=cx+tx*dist+(Math.random()-.5)*8;
+      const smy=cy+ty*dist+(Math.random()-.5)*8;
+      const sr=3+i*1.5+Math.random()*2;
+      ctx.globalAlpha=.12-.02*i;
+      ctx.fillStyle=`rgba(${80+i*20},${70+i*15},${60+i*10},.5)`;
+      ctx.beginPath();ctx.arc(smx,smy,sr,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // Ember trail (orange/yellow sparks)
+    for(let i=0;i<6;i++){
+      const dist=4+Math.random()*20;
+      const ex=cx+tx*dist+(Math.random()-.5)*12;
+      const ey=cy+ty*dist+(Math.random()-.5)*12;
+      const er=1+Math.random()*2;
+      ctx.globalAlpha=.5+Math.random()*.4;
+      ctx.fillStyle=Math.random()<.6?'#ff8c00':'#ffcc00';
+      ctx.beginPath();ctx.arc(ex,ey,er,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // Outer flame layers
+    for(let i=0;i<5;i++){
+      const fx=cx+(Math.random()-.5)*BS*1.4;
+      const fy=cy+(Math.random()-.5)*BS*1.4;
+      const fr=BS/2+Math.random()*BS*.7;
       const grd=ctx.createRadialGradient(fx,fy,0,fx,fy,fr);
-      grd.addColorStop(0,'rgba(255,200,50,.6)');
-      grd.addColorStop(.4,'rgba(255,100,0,.3)');
-      grd.addColorStop(1,'rgba(255,50,0,0)');
+      grd.addColorStop(0,'rgba(255,220,80,.55)');
+      grd.addColorStop(.3,'rgba(255,120,0,.35)');
+      grd.addColorStop(.7,'rgba(200,40,0,.15)');
+      grd.addColorStop(1,'rgba(100,0,0,0)');
       ctx.fillStyle=grd;ctx.beginPath();ctx.arc(fx,fy,fr,0,Math.PI*2);ctx.fill();
     }
-    // Hot core
-    ctx.shadowColor='#ff6600';ctx.shadowBlur=15;
-    ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(bx+BS/2,by+BS/2,BS/2,0,Math.PI*2);ctx.fill();
+    // Hot white-yellow core
+    ctx.shadowColor='#ff6600';ctx.shadowBlur=20;
+    const coreGrd=ctx.createRadialGradient(cx,cy,0,cx,cy,BS/2);
+    coreGrd.addColorStop(0,'rgba(255,255,220,.95)');
+    coreGrd.addColorStop(.5,'#ffcc00');
+    coreGrd.addColorStop(1,'#ff6600');
+    ctx.fillStyle=coreGrd;ctx.beginPath();ctx.arc(cx,cy,BS/2+1,0,Math.PI*2);ctx.fill();
     ctx.restore();
+    // Spawn persistent smoke+ember particles behind ball
+    if(Math.random()<.7){
+      particles.push({x:cx+tx*6+(Math.random()-.5)*6,y:cy+ty*6+(Math.random()-.5)*6,vx:tx*.8+(Math.random()-.5),vy:ty*.8+(Math.random()-.5),life:1,decay:.04,size:2+Math.random()*3,brickColor:'rgba(100,90,80,.4)'});
+    }
+    if(Math.random()<.5){
+      particles.push({x:cx+tx*4+(Math.random()-.5)*8,y:cy+ty*4+(Math.random()-.5)*8,vx:tx*1.5+(Math.random()-.5)*2,vy:ty*1.5+(Math.random()-.5)*2-1,life:1,decay:.06,size:1+Math.random()*2,brickColor:Math.random()<.5?'#ff8c00':'#ffcc00'});
+    }
   }else{
     drawBall(bx,by,BS,sk,false,false);
   }
@@ -2301,8 +2461,19 @@ function survDraw(now){
   for(const eb of survExtraBalls){
     if(!eb.alive)continue;
     if(survFireball){
-      ctx.save();ctx.shadowColor='#ff6600';ctx.shadowBlur=10;
-      ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(eb.x+BS/2,eb.y+BS/2,BS/2,0,Math.PI*2);ctx.fill();
+      ctx.save();
+      const ecx=eb.x+BS/2,ecy=eb.y+BS/2;
+      for(let i=0;i<3;i++){
+        const fx=ecx+(Math.random()-.5)*BS;const fy=ecy+(Math.random()-.5)*BS;
+        const fr=BS/2+Math.random()*BS*.4;
+        const grd=ctx.createRadialGradient(fx,fy,0,fx,fy,fr);
+        grd.addColorStop(0,'rgba(255,220,80,.5)');grd.addColorStop(.5,'rgba(255,100,0,.25)');grd.addColorStop(1,'rgba(200,40,0,0)');
+        ctx.fillStyle=grd;ctx.beginPath();ctx.arc(fx,fy,fr,0,Math.PI*2);ctx.fill();
+      }
+      ctx.shadowColor='#ff6600';ctx.shadowBlur=15;
+      const cg=ctx.createRadialGradient(ecx,ecy,0,ecx,ecy,BS/2);
+      cg.addColorStop(0,'rgba(255,255,220,.9)');cg.addColorStop(.5,'#ffcc00');cg.addColorStop(1,'#ff6600');
+      ctx.fillStyle=cg;ctx.beginPath();ctx.arc(ecx,ecy,BS/2,0,Math.PI*2);ctx.fill();
       ctx.restore();
     }else{
       drawBall(eb.x,eb.y,BS,sk,false,false);
@@ -2418,6 +2589,21 @@ function buildTestButtons(){
     btnR.onclick=()=>{if(state)activatePowerup(key,'right',performance.now());};
     contR.appendChild(btnR);
   }
+  // Survival-only power-up test buttons
+  const survCont=document.getElementById('test-surv-btns');
+  const survOnlyKeys=SURV_PU_KEYS.filter(k=>SURV_ONLY_PUS.has(k));
+  for(const key of survOnlyKeys){
+    const pu=POWER_UPS[key];
+    const btn=document.createElement('button');btn.className='test-btn';
+    btn.style.borderLeft=`3px solid ${pu.color}`;
+    btn.textContent=`${pu.icon} ${pu.name}`;
+    btn.onclick=()=>{if(survState)survActivatePU(key,performance.now());};
+    survCont.appendChild(btn);
+  }
+}
+function updateTestPanelForMode(){
+  const sec=document.getElementById('test-surv-section');
+  if(sec)sec.style.display=gameMode==='survival'?'block':'none';
 }
 function testClearPU(){clearAllPowerups();fieldPowerups=[];}
 function testScoreLeft(){if(state)state.left.score++;}
