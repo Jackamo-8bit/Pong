@@ -10,7 +10,45 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;tou
 #pw{display:flex;flex-direction:column;align-items:center;padding:1rem 0;font-family:monospace;}
 #menu,#game-over{display:flex;flex-direction:column;align-items:center;gap:12px;}
 canvas{display:block;}
-.gtitle{font-family:Georgia,serif;font-size:38px;font-weight:normal;letter-spacing:3px;}
+.gtitle{font-family:Georgia,serif;font-size:38px;font-weight:normal;letter-spacing:3px;
+  animation:titleBall 2.8s .4s both;}
+.title-wrap{display:flex;align-items:center;gap:28px;opacity:0;animation:titleFade .5s .3s both;}
+.title-paddle{width:5px;height:36px;border-radius:2px;background:currentColor;opacity:.4;}
+.title-paddle-l{animation:titleHitL 2.8s .4s both;}
+.title-paddle-r{animation:titleHitR 2.8s .4s both;}
+@keyframes titleFade{0%{opacity:0;transform:translateY(-18px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes titleBall{
+  /* Start from right paddle, bounce left, right, left, settle center */
+  0%{opacity:0;transform:translateX(38px);}
+  5%{opacity:1;transform:translateX(38px);}
+  /* Hit right paddle → fly left */
+  6%{transform:translateX(36px);}
+  22%{transform:translateX(-36px);}
+  /* Hit left paddle → fly right (less energy) */
+  23%{transform:translateX(-34px);}
+  42%{transform:translateX(28px);}
+  /* Hit right paddle → fly left (less energy) */
+  43%{transform:translateX(26px);}
+  62%{transform:translateX(-20px);}
+  /* Hit left paddle → drift right to center */
+  63%{transform:translateX(-18px);}
+  85%{transform:translateX(4px);}
+  100%{opacity:1;transform:translateX(0);}
+}
+@keyframes titleHitL{
+  0%,20%{opacity:.4;transform:scaleY(1);}
+  22%{opacity:.9;transform:scaleY(1.3);}26%{transform:scaleY(1);opacity:.4;}
+  60%{opacity:.4;transform:scaleY(1);}
+  62%{opacity:.8;transform:scaleY(1.2);}66%{transform:scaleY(1);opacity:.4;}
+  100%{opacity:.4;transform:scaleY(1);}
+}
+@keyframes titleHitR{
+  0%,4%{opacity:.4;transform:scaleY(1);}
+  6%{opacity:.9;transform:scaleY(1.3);}10%{transform:scaleY(1);opacity:.4;}
+  40%{opacity:.4;transform:scaleY(1);}
+  42%{opacity:.8;transform:scaleY(1.2);}46%{transform:scaleY(1);opacity:.4;}
+  100%{opacity:.4;transform:scaleY(1);}
+}
 .wtitle{font-family:Georgia,serif;font-size:28px;font-weight:normal;letter-spacing:2px;}
 .wscore{font-family:monospace;font-size:15px;letter-spacing:3px;opacity:.6;}
 .wmatch{font-family:monospace;font-size:12px;letter-spacing:2px;opacity:.5;}
@@ -25,8 +63,8 @@ canvas{display:block;}
 #bar{display:flex;align-items:center;gap:12px;margin-top:6px;}
 #mlabel{font-size:11px;opacity:.5;letter-spacing:1px;}
 .skin-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;max-width:620px;}
-.skin-btn{border:2px solid transparent;cursor:pointer;border-radius:6px;padding:8px 6px 6px;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:monospace;font-size:11px;letter-spacing:1px;}
-.skin-btn:hover{opacity:.85;}
+.skin-btn{border:2px solid transparent;cursor:pointer;border-radius:6px;padding:8px 6px 6px;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:monospace;font-size:11px;letter-spacing:1px;transition:transform .15s,box-shadow .15s;}
+.skin-btn:hover{opacity:.85;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.25);}
 .skin-btn.active{border-color:currentColor!important;}
 .skin-preview{width:80px;height:50px;border-radius:3px;position:relative;overflow:hidden;}
 .opt-btn{background:transparent;padding:6px 14px;font-family:monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;border:1.5px solid currentColor;opacity:.35;}
@@ -36,14 +74,15 @@ canvas{display:block;}
 .name-row{display:flex;gap:10px;align-items:center;}
 .name-input{background:transparent;border:none;border-bottom:1.5px solid currentColor;font-family:monospace;font-size:14px;letter-spacing:2px;text-align:center;width:120px;padding:4px 0;outline:none;color:inherit;}
 .name-vs{opacity:.35;font-size:12px;}
-/* power-up popup */
-#pu-popup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:100;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
-#pu-popup.show{transform:translate(-50%,-50%) scale(1);}
-#pu-popup-inner{border-radius:12px;padding:14px 22px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid;backdrop-filter:blur(6px);}
-#pu-icon-big{font-size:36px;line-height:1;}
-#pu-who{font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:.7;font-family:monospace;}
-#pu-name{font-size:16px;font-weight:bold;letter-spacing:2px;font-family:monospace;}
-#pu-desc{font-size:10px;letter-spacing:1px;opacity:.6;font-family:monospace;}
+/* power-up popup — top bar notification */
+#pu-popup{position:absolute;top:88px;left:50%;transform:translateX(-50%) translateY(-40px);pointer-events:none;z-index:100;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;}
+#pu-popup.show{transform:translateX(-50%) translateY(0);opacity:1;}
+#pu-popup-inner{border-radius:8px;padding:6px 16px;display:flex;align-items:center;gap:8px;border:1.5px solid;backdrop-filter:blur(6px);}
+#pu-icon-big{font-size:20px;line-height:1;}
+#pu-who{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.6;font-family:monospace;}
+#pu-name{font-size:13px;font-weight:bold;letter-spacing:1.5px;font-family:monospace;}
+#pu-desc{font-size:9px;letter-spacing:1px;opacity:.5;font-family:monospace;display:none;}
+#pu-popup-inner .pu-text{display:flex;flex-direction:column;gap:1px;}
 #canvas-wrap{position:relative;display:inline-block;}
 /* touch paddle zones (invisible) */
 #touch-left,#touch-right{position:absolute;top:0;width:50%;height:100%;cursor:pointer;}
@@ -52,9 +91,11 @@ canvas{display:block;}
 .touch-indicator{position:absolute;width:40px;height:40px;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .15s;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);}
 .touch-indicator.active{opacity:1;}
 /* leaderboard */
-#lboard{width:100%;max-width:620px;}
+#lboard{width:100%;max-width:620px;font-family:Georgia,serif;}
 .lb-row{display:flex;justify-content:space-between;font-size:11px;letter-spacing:1px;opacity:.7;padding:2px 0;}
 .lb-row.lb-head{opacity:.4;font-size:10px;border-bottom:1px solid currentColor;padding-bottom:4px;margin-bottom:4px;}
+.lb-tab{background:none;border:1px solid currentColor;color:inherit;opacity:.3;font-family:Georgia,serif;font-size:10px;letter-spacing:1px;padding:3px 10px;border-radius:4px;cursor:pointer;transition:opacity .2s;}
+.lb-tab:hover{opacity:.5;}.lb-tab.active{opacity:.8;border-width:1.5px;}
 /* volume slider */
 .vol-wrap{display:flex;align-items:center;gap:6px;}
 .vol-slider{-webkit-appearance:none;appearance:none;width:60px;height:4px;border-radius:2px;background:currentColor;opacity:.4;cursor:pointer;outline:none;}
@@ -62,6 +103,11 @@ canvas{display:block;}
 /* keyboard legend */
 #kb-legend{font-size:9px;opacity:.35;letter-spacing:1px;text-align:center;line-height:1.6;max-width:500px;transition:opacity .2s;}
 #kb-legend:hover{opacity:.6;}
+/* test panel */
+.test-btn{display:block;width:100%;background:#222;color:#ccc;border:1px solid #444;padding:4px 8px;margin:2px 0;cursor:pointer;font-family:monospace;font-size:10px;text-align:left;border-radius:3px;}
+.test-btn:hover{background:#333;color:#fff;}
+.menu-hr{width:80%;max-width:500px;border:none;border-top:1px solid currentColor;opacity:.08;margin:4px 0;}
+.sub-cta{font-size:14px;letter-spacing:4px;opacity:.7;font-weight:bold;}
 </style>
 </head>
 <body>
@@ -69,7 +115,11 @@ canvas{display:block;}
 
 <!-- ── MENU ── -->
 <div id="menu">
-  <div class="gtitle" id="menu-title" style="opacity:0;transform:translateY(-30px);transition:opacity .6s,transform .6s;">Pong</div>
+  <div class="title-wrap" id="menu-title">
+    <div class="title-paddle title-paddle-l"></div>
+    <div class="gtitle">Pong</div>
+    <div class="title-paddle title-paddle-r"></div>
+  </div>
 
   <div class="sub">your names</div>
   <div class="name-row">
@@ -78,14 +128,17 @@ canvas{display:block;}
     <input class="name-input" id="name-right" maxlength="10" placeholder="Player 2" value="Player 2">
   </div>
 
+  <hr class="menu-hr">
   <div class="sub">choose your skin</div>
   <div class="skin-grid" id="skin-grid"></div>
 
+  <hr class="menu-hr">
   <div class="sub" style="margin-top:2px;">game mode</div>
   <div class="row" id="gamemode-opts">
     <button class="opt-btn" data-gm="classic" onclick="setGameMode('classic')">Classic</button>
     <button class="opt-btn" data-gm="chaos"   onclick="setGameMode('chaos')">🔥 Chaos</button>
     <button class="opt-btn" data-gm="bricks"  onclick="setGameMode('bricks')">🧱 Bricks</button>
+    <button class="opt-btn" data-gm="survival" onclick="setGameMode('survival')">👾 Survival</button>
   </div>
 
   <div class="sub" style="margin-top:2px;">match format</div>
@@ -109,14 +162,22 @@ canvas{display:block;}
     <button class="opt-btn" data-diff="hard"   onclick="setDiff('hard')">Hard</button>
   </div>
 
-  <div class="sub" style="margin-top:2px;">choose mode</div>
+  <hr class="menu-hr">
+  <div class="sub sub-cta" style="margin-top:2px;">choose mode</div>
   <div class="row">
     <button class="btn" id="btn2p" onclick="startMatch('2p')">2 Players</button>
     <button class="btn" id="btnai" onclick="startMatch('ai')">vs AI</button>
   </div>
-  <div class="hint">W/S = left &nbsp;|&nbsp; arrows = right &nbsp;|&nbsp; P = pause<br>space/W/↑ = serve &nbsp;|&nbsp; move paddle to aim serve</div>
+  <div class="hint">W/S = left &nbsp;|&nbsp; arrows = right &nbsp;|&nbsp; P = pause<br>aim with W/S or ↑/↓ &nbsp;|&nbsp; space = serve</div>
 
+  <hr class="menu-hr">
   <div class="sub" id="lb-title" style="margin-top:6px;">hall of fame</div>
+  <div id="lb-tabs" style="display:flex;gap:6px;margin:6px 0;">
+    <button class="lb-tab active" onclick="switchLbTab('classic')">Classic</button>
+    <button class="lb-tab" onclick="switchLbTab('chaos')">Chaos</button>
+    <button class="lb-tab" onclick="switchLbTab('bricks')">Bricks</button>
+    <button class="lb-tab" onclick="switchLbTab('survival')">Survival</button>
+  </div>
   <div id="lboard"></div>
 </div>
 
@@ -125,8 +186,9 @@ canvas{display:block;}
   <div id="canvas-wrap">
     <canvas id="c" width="700" height="450"></canvas>
     <div id="pu-popup"><div id="pu-popup-inner">
-      <div id="pu-icon-big"></div><div id="pu-who"></div>
-      <div id="pu-name"></div><div id="pu-desc"></div>
+      <div id="pu-icon-big"></div>
+      <div class="pu-text"><div id="pu-name"></div><div id="pu-who"></div></div>
+      <div id="pu-desc"></div>
     </div></div>
     <div id="touch-left"></div>
     <div id="touch-right"></div>
@@ -142,7 +204,25 @@ canvas{display:block;}
     </div>
     <button class="btn-o" onclick="showMenu()">Menu</button>
   </div>
-  <div id="kb-legend">W/S left · ↑/↓ right · P pause · +/− volume · space serve</div>
+  <div id="kb-legend">W/S left · ↑/↓ right · P pause · +/− volume · space serve · aim W/S ↑↓ · T test panel</div>
+</div>
+<!-- ── TEST MODE PANEL ── -->
+<div id="test-panel" style="display:none;position:fixed;top:0;right:0;width:220px;max-height:100vh;overflow-y:auto;background:rgba(0,0,0,.92);color:#ccc;font-family:monospace;font-size:11px;padding:10px;z-index:200;border-left:2px solid #444;">
+  <div style="font-size:13px;font-weight:bold;margin-bottom:8px;color:#fff;display:flex;justify-content:space-between;align-items:center;">TEST MODE <span onclick="toggleTestPanel()" style="cursor:pointer;opacity:.5;">[X]</span></div>
+  <div style="margin-bottom:6px;opacity:.5;">Power-ups (Left player):</div>
+  <div id="test-pu-btns"></div>
+  <div style="margin-top:8px;opacity:.5;">Power-ups (Right player):</div>
+  <div id="test-pu-btns-r"></div>
+  <div style="margin-top:10px;border-top:1px solid #333;padding-top:8px;">
+    <div style="opacity:.5;margin-bottom:4px;">Utilities:</div>
+    <button class="test-btn" onclick="testClearPU()">Clear Power-up</button>
+    <button class="test-btn" onclick="testScoreLeft()">Score Left +1</button>
+    <button class="test-btn" onclick="testScoreRight()">Score Right +1</button>
+    <button class="test-btn" onclick="testSpawnFieldPU()">Spawn Field PU</button>
+    <button class="test-btn" onclick="testResetBall()">Reset Ball</button>
+    <button class="test-btn" onclick="testMaxSpeed()">Max Speed</button>
+    <button class="test-btn" onclick="testSlowSpeed()">Slow Speed</button>
+  </div>
 </div>
 
 <!-- ── GAME OVER (single game / set) ── -->
@@ -166,6 +246,17 @@ canvas{display:block;}
     <button class="btn" id="mrmbtn" onclick="showMenu()">Menu</button>
   </div>
   <div class="hint" style="margin-top:4px;">or press space for rematch</div>
+</div>
+
+<!-- ── SURVIVAL TURN TRANSITION ── -->
+<div id="surv-turn" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+  <div class="wtitle" id="surv-turn-txt"></div>
+  <div class="wscore" id="surv-turn-info"></div>
+  <div class="row" style="margin-top:8px;">
+    <button class="btn" id="surv-go-btn" onclick="survStartTurn()">Start</button>
+    <button class="btn" onclick="showMenu()">Menu</button>
+  </div>
+  <div class="hint" style="margin-top:4px;">press space to start</div>
 </div>
 
 </div><!-- #pw -->
@@ -208,6 +299,44 @@ function setVolume(v){
   if(v==0&&!muted)toggleMute();
   if(v>0&&muted){muted=false;document.getElementById('mutebtn').textContent='🔊';}
 }
+
+// Power-up specific sounds
+const PU_SOUNDS={
+  // Portal: spacey whoosh — descending sweep with noise
+  portal:()=>{const ac=getAudio(),t=ac.currentTime;playTone(1200,'sine',.4,.2,t,200);playTone(800,'triangle',.5,.12,t+.05,150);playNoise(.3,.06,t);},
+  // Shield: metallic clang + rising tone
+  shield:()=>{const ac=getAudio(),t=ac.currentTime;playTone(220,'square',.08,.3,t);playTone(440,'triangle',.15,.2,t+.05);playTone(880,'sine',.2,.15,t+.1);playTone(1320,'sine',.15,.1,t+.18);},
+  // Ghost: eerie descending whisper
+  ghost:()=>{const ac=getAudio(),t=ac.currentTime;playTone(900,'sine',.5,.15,t,300);playTone(700,'sine',.4,.1,t+.1,200);playNoise(.2,.04,t+.05);},
+  // Magnet: buzzing electromagnetic hum
+  magnet:()=>{const ac=getAudio(),t=ac.currentTime;playTone(120,'sawtooth',.3,.2,t);playTone(240,'sawtooth',.25,.12,t+.05);playTone(360,'sine',.2,.1,t+.1);},
+  // Defender: military horn/alert
+  defender:()=>{const ac=getAudio(),t=ac.currentTime;playTone(523,'triangle',.1,.25,t);playTone(659,'triangle',.1,.25,t+.12);playTone(784,'triangle',.2,.25,t+.24);},
+  // Black hole: deep rumble + warp
+  blackhole:()=>{const ac=getAudio(),t=ac.currentTime;playTone(60,'sawtooth',.5,.25,t,30);playTone(400,'sine',.3,.15,t,1200);playNoise(.3,.08,t);},
+  // Invert: glitchy scramble
+  invert:()=>{const ac=getAudio(),t=ac.currentTime;for(let i=0;i<6;i++)playTone(200+Math.random()*800,'square',.05,.15,t+i*.04);},
+  // Slow Mo: low stretch
+  slowmo:()=>{const ac=getAudio(),t=ac.currentTime;playTone(400,'sine',.4,.2,t,150);playTone(300,'triangle',.3,.12,t+.1,100);},
+  // Curved Paddle: bendy twang
+  curvedpaddle:()=>{const ac=getAudio(),t=ac.currentTime;playTone(500,'triangle',.15,.2,t,800);playTone(800,'triangle',.15,.15,t+.1,400);},
+  // Laser: high-energy zap
+  laser:()=>{const ac=getAudio(),t=ac.currentTime;playTone(1800,'sawtooth',.3,.2,t,600);playTone(2400,'sine',.2,.1,t+.05);playNoise(.15,.06,t);},
+  // Freeze: crystalline chime
+  freeze:()=>{const ac=getAudio(),t=ac.currentTime;[1200,1600,2000,2400].forEach((f,i)=>playTone(f,'sine',.12,.12,t+i*.06));},
+  // Bomb: deep boom
+  bomb:()=>{const ac=getAudio(),t=ac.currentTime;playTone(80,'sawtooth',.4,.3,t,40);playNoise(.5,.15,t);playTone(200,'square',.2,.12,t+.05,60);},
+  // Multiball: rapid ping cascade
+  multiball:()=>{const ac=getAudio(),t=ac.currentTime;[500,700,900].forEach((f,i)=>playTone(f,'triangle',.08,.15,t+i*.06));},
+  // Slow-mo survival: stretchy low tone
+  survslowmo:()=>{const ac=getAudio(),t=ac.currentTime;playTone(300,'sine',.5,.2,t,120);playTone(200,'triangle',.4,.15,t+.1,80);},
+  // Magnet paddle: magnetic hum
+  magnetpaddle:()=>{const ac=getAudio(),t=ac.currentTime;playTone(150,'sawtooth',.3,.2,t);playTone(300,'sine',.25,.15,t+.08);},
+  // Fireball: crackling flame
+  fireball:()=>{const ac=getAudio(),t=ac.currentTime;playTone(400,'sawtooth',.15,.2,t,800);playNoise(.3,.1,t);playTone(600,'triangle',.1,.12,t+.08);},
+  // Shrink row: swoosh away
+  shrinkrow:()=>{const ac=getAudio(),t=ac.currentTime;playTone(800,'sine',.2,.15,t,200);playTone(400,'sine',.15,.1,t+.1,100);},
+};
 
 // Pitched countdown: 3=low, 2=mid, 1=high, 0=GO (higher+longer)
 function playCountdownBeep(n){
@@ -283,12 +412,30 @@ const POWER_UPS={
   curve:      {name:'CURVE BALL',  desc:'Ball curves in flight!', icon:'🌀',color:'#a855f7',duration:5500},
   bigball:    {name:'BIG BALL',    desc:'Impossible to miss!',    icon:'🔵',color:'#3b82f6',duration:4500},
   smallball:  {name:'SMALL BALL',  desc:'Tiny & tricky...',       icon:'🔴',color:'#ef4444',duration:4500},
-  widepaddle: {name:'WIDE PADDLE', desc:'Your paddle grows!',     icon:'🟩',color:'#22c55e',duration:6000,paddle:true},
-  shortpaddle:{name:'SHORT PADDLE',desc:"Opponent shrinks!",      icon:'🟥',color:'#f43f5e',duration:6000,paddle:true},
+  widepaddle: {name:'WIDE PADDLE', desc:'Your paddle grows!',     icon:'_wide_',color:'#22c55e',duration:6000,paddle:true},
+  shortpaddle:{name:'SHORT PADDLE',desc:"Opponent shrinks!",      icon:'_short_',color:'#f43f5e',duration:6000,paddle:true},
+  blackhole:  {name:'BLACK HOLE',  desc:'Ball teleports randomly!',icon:'🕳️',color:'#6b21a8',duration:0},
+  slowmo:     {name:'SLOW MO',     desc:'Opponent paddle slows!', icon:'🐌',color:'#f59e0b',duration:5000},
+  defender:   {name:'DEFENDER',    desc:'AI ally guards your goal!',icon:'🛡️',color:'#06b6d4',duration:5500},
+  shield:     {name:'SHIELD',      desc:'Blocks one goal!',       icon:'🔰',color:'#10b981',duration:20000},
+  magnet:     {name:'MAGNET',      desc:'Returns gravitate to you!',icon:'🧲',color:'#ec4899',duration:5500},
+  curvedpaddle:{name:'CURVED',     desc:'Opponent paddle curves!',icon:'🪃',color:'#f97316',duration:6000},
+  ghost:      {name:'GHOST BALL',  desc:'Ball nearly invisible!', icon:'👻',color:'#94a3b8',duration:5000},
+  invert:     {name:'INVERT',      desc:'Opponent controls flip!',icon:'🔄',color:'#8b5cf6',duration:5500},
+  portal:     {name:'PORTAL',      desc:'Two linked portals!',    icon:'🌀',color:'#2dd4bf',duration:12000},
+  // Survival-only power-ups
+  laser:      {name:'LASER',       desc:'Paddle fires a laser!',  icon:'⚡',color:'#00bfff',duration:4000},
+  freeze:     {name:'FREEZE',      desc:'Bricks stop moving!',    icon:'❄️',color:'#67e8f9',duration:5000},
+  bomb:       {name:'BOMB',        desc:'Next hit explodes!',     icon:'💣',color:'#ff4500',duration:15000},
+  multiball:  {name:'MULTI-BALL',  desc:'Ball splits into 3!',    icon:'⚪',color:'#e2e8f0',duration:0},
+  survslowmo: {name:'SLOW-MO',     desc:'Bricks slow down!',      icon:'🐌',color:'#fbbf24',duration:8000},
+  magnetpaddle:{name:'MAGNET PAD', desc:'Ball sticks to paddle!', icon:'🧲',color:'#f472b6',duration:10000},
+  fireball:   {name:'FIREBALL',    desc:'Ball burns through!',    icon:'🔥',color:'#f97316',duration:5000},
+  shrinkrow:  {name:'SHRINK ROW',  desc:'Bottom row vanishes!',   icon:'💨',color:'#a78bfa',duration:0},
 };
 const PU_KEYS=Object.keys(POWER_UPS);
 const POWERUP_SPAWN_INTERVAL=9000, POWERUP_LIFESPAN=11000;
-const CHAOS_SPAWN_INTERVAL=3500;
+const CHAOS_SPAWN_INTERVAL=2000;
 
 // ═══════════════════════════════════════════════════════════════════
 // GAME MODE
@@ -307,39 +454,76 @@ let nameLeft='Player 1', nameRight='Player 2';
 
 function loadStats(){try{return JSON.parse(localStorage.getItem('pong_stats')||'{}');}catch{return {};}}
 function saveStats(s){try{localStorage.setItem('pong_stats',JSON.stringify(s));}catch{}}
-function recordWin(name){
+function getPlayerStats(name,gm){
   const s=loadStats();
-  if(!s[name])s[name]={wins:0,losses:0,rallypb:0,lastPlayed:null};
-  s[name].wins++;s[name].lastPlayed=new Date().toISOString().slice(0,10);saveStats(s);
+  if(!s[name])s[name]={};
+  if(!s[name][gm])s[name][gm]={wins:0,losses:0,rallypb:0,survpb:0,lastPlayed:null};
+  return{stats:s,player:s[name][gm],save:()=>saveStats(s)};
+}
+function recordWin(name){
+  const gm=gameMode||'classic';
+  const{player,save}=getPlayerStats(name,gm);
+  player.wins++;player.lastPlayed=new Date().toISOString().slice(0,10);save();
 }
 function recordLoss(name){
-  const s=loadStats();
-  if(!s[name])s[name]={wins:0,losses:0,rallypb:0,lastPlayed:null};
-  s[name].losses++;s[name].lastPlayed=new Date().toISOString().slice(0,10);saveStats(s);
+  const gm=gameMode||'classic';
+  const{player,save}=getPlayerStats(name,gm);
+  player.losses++;player.lastPlayed=new Date().toISOString().slice(0,10);save();
 }
 function recordRallyPB(name,rally){
-  const s=loadStats();
-  if(!s[name])s[name]={wins:0,losses:0,rallypb:0,lastPlayed:null};
-  if(rally>s[name].rallypb){s[name].rallypb=rally;saveStats(s);return true;}
+  const gm=gameMode||'classic';
+  const{player,save}=getPlayerStats(name,gm);
+  if(rally>player.rallypb){player.rallypb=rally;save();return true;}
+  return false;
+}
+function recordSurvivalTime(name,ms){
+  const{player,save}=getPlayerStats(name,'survival');
+  const secs=ms/1000;
+  if(secs>player.survpb){player.survpb=secs;player.lastPlayed=new Date().toISOString().slice(0,10);save();return true;}
+  player.lastPlayed=new Date().toISOString().slice(0,10);save();
   return false;
 }
 function globalRallyPB(){
   const s=loadStats();let pb=0;
-  Object.values(s).forEach(v=>{if(v.rallypb>pb)pb=v.rallypb;});
+  Object.values(s).forEach(p=>{Object.values(p).forEach(v=>{if(v.rallypb>pb)pb=v.rallypb;});});
   return pb;
 }
 
+let currentLbTab='classic';
+function switchLbTab(tab){
+  currentLbTab=tab;
+  document.querySelectorAll('.lb-tab').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase()===tab);});
+  buildLeaderboard();
+}
 function buildLeaderboard(){
   const s=loadStats();
   const lb=document.getElementById('lboard');
-  const entries=Object.entries(s).filter(([,v])=>v.wins>0||v.losses>0);
-  if(!entries.length){lb.innerHTML='<div style="opacity:.3;font-size:11px;letter-spacing:1px;">no games played yet</div>';return;}
-  entries.sort((a,b)=>b[1].wins-a[1].wins);
-  lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>W</span><span>L</span><span>Rally PB</span><span>Last Played</span></div>`
-    +entries.slice(0,8).map(([name,v])=>{
-      const lp=v.lastPlayed?formatDate(v.lastPlayed):'—';
-      return`<div class="lb-row"><span>${name}</span><span>${v.wins}</span><span>${v.losses}</span><span>${v.rallypb||0}</span><span>${lp}</span></div>`;
-    }).join('');
+  const tab=currentLbTab;
+  const isSurv=tab==='survival';
+  // Gather entries for this mode
+  const entries=[];
+  for(const[name,modes]of Object.entries(s)){
+    const v=modes[tab];
+    if(!v)continue;
+    if(isSurv){if(v.survpb>0)entries.push([name,v]);}
+    else{if(v.wins>0||v.losses>0)entries.push([name,v]);}
+  }
+  if(!entries.length){lb.innerHTML='<div style="opacity:.3;font-size:11px;letter-spacing:1px;font-family:Georgia,serif;">no games played yet</div>';return;}
+  if(isSurv){
+    entries.sort((a,b)=>b[1].survpb-a[1].survpb);
+    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>Best Time</span><span>Last Played</span></div>`
+      +entries.slice(0,8).map(([name,v])=>{
+        const lp=v.lastPlayed?formatDate(v.lastPlayed):'—';
+        return`<div class="lb-row"><span>${name}</span><span>${v.survpb.toFixed(1)}s</span><span>${lp}</span></div>`;
+      }).join('');
+  }else{
+    entries.sort((a,b)=>b[1].wins-a[1].wins);
+    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>W</span><span>L</span><span>Rally PB</span><span>Last Played</span></div>`
+      +entries.slice(0,8).map(([name,v])=>{
+        const lp=v.lastPlayed?formatDate(v.lastPlayed):'—';
+        return`<div class="lb-row"><span>${name}</span><span>${v.wins}</span><span>${v.losses}</span><span>${v.rallypb||0}</span><span>${lp}</span></div>`;
+      }).join('');
+  }
 }
 
 function formatDate(iso){
@@ -364,11 +548,18 @@ let lastMode='2p';
 // CANVAS & GAME STATE (High-DPI support)
 // ═══════════════════════════════════════════════════════════════════
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-const W=700,H=450,PW=12,PH=80;
+let W=700,H=450;const PW=12,PH=80;
 const dpr=window.devicePixelRatio||1;
 canvas.width=W*dpr;canvas.height=H*dpr;
 canvas.style.width=W+'px';canvas.style.height=H+'px';
 ctx.scale(dpr,dpr);
+
+function resizeCanvas(w,h){
+  W=w;H=h;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);
+}
 
 const AI_SPEED={easy:2.2,medium:3.8,hard:5.6};
 const AI_ERROR={easy:60,medium:22,hard:4};
@@ -378,27 +569,36 @@ let mode,animId,paused=false,state,particles=[];
 let chaosHue=0,keys={};
 let serving=false,serveSide='left',countdown=0,countdownT=0;
 let shakeAmt=0;
-let rallyHits=0,sessionRallyPB=0;
+let rallyHits=0,sessionRallyPB=0,rallyPopT=0;
 let aiError=0;
 let serveAimAngle=0;
-let fieldPowerup=null,activePowerup=null,nextPuSpawn=0,puPopupTimeout=null;
+let fieldPowerups=[],activePowerups=[],nextPuSpawn=0,puPopupTimeout=null;
+// Helpers for querying active power-ups
+function hasAPU(type){return activePowerups.some(p=>p.type===type);}
+function getAPU(type){return activePowerups.find(p=>p.type===type);}
+function anyAPU(){return activePowerups.length>0;}
+function getAPUSide(type){const p=getAPU(type);return p?p.side:null;}
 let decoyBalls=[],leadPreSpeed=null;
+let shieldSide=null; // which side has an active shield
+let defenderPaddle=null; // {side,y} — small AI-controlled paddle near goal
+let portalA=null,portalB=null; // {x,y} for linked portals
+let blackholePos=null; // {x,y} for the black hole on field
 let introPhase=true,introT=0;
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════
 function getPH(side){
-  if(!activePowerup)return PH;
-  const{type,side:ps}=activePowerup;
-  if(type==='widepaddle') return ps===side?PH*1.8:PH;
-  if(type==='shortpaddle')return ps!==side?PH*.45:PH;
-  return PH;
+  let h=PH;
+  for(const ap of activePowerups){
+    if(ap.type==='widepaddle'&&ap.side===side)h=Math.max(h,PH*1.8);
+    if(ap.type==='shortpaddle'&&ap.side!==side)h=Math.min(h,PH*.45);
+  }
+  return h;
 }
 function getBallSize(){
-  if(!activePowerup)return 10;
-  if(activePowerup.type==='bigball')  return 26;
-  if(activePowerup.type==='smallball')return 5;
+  if(hasAPU('bigball'))return 26;
+  if(hasAPU('smallball'))return 5;
   return 10;
 }
 function playerName(side){return side==='left'?nameLeft:nameRight;}
@@ -499,12 +699,28 @@ function drawParticles(){
 function spawnFieldPowerup(now){
   const type=PU_KEYS[Math.floor(Math.random()*PU_KEYS.length)];
   const margin=80;
-  fieldPowerup={type,x:margin+Math.random()*(W-margin*2),y:80+Math.random()*(H-160),spawnTime:now,bobOffset:Math.random()*Math.PI*2};
+  fieldPowerups.push({type,x:margin+Math.random()*(W-margin*2),y:80+Math.random()*(H-160),spawnTime:now,bobOffset:Math.random()*Math.PI*2});
+  // In chaos mode, schedule next spawn quickly while allowing multiple on field
+  if(gameMode==='chaos'){nextPuSpawn=now+CHAOS_SPAWN_INTERVAL;}
+}
+// Draw paddle-shaped icon on canvas at (cx,cy) with given height
+function drawPaddleIcon(cx,cy,h,color){
+  const w=h*.25;const r=w/2;
+  ctx.save();ctx.fillStyle=color;
+  ctx.beginPath();ctx.roundRect(cx-w/2,cy-h/2,w,h,r);ctx.fill();ctx.restore();
+}
+// Create SVG paddle icon as HTML string for popup
+function paddleIconSVG(tall,color){
+  const h=tall?32:16,w=tall?8:8,r=4;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin:auto"><rect x="0" y="0" width="${w}" height="${h}" rx="${r}" fill="${color}"/></svg>`;
 }
 function showPuPopup(side,type){
   const pu=POWER_UPS[type],sk=SKINS[currentSkin];
   const popup=document.getElementById('pu-popup'),inner=document.getElementById('pu-popup-inner');
-  document.getElementById('pu-icon-big').textContent=pu.icon;
+  const iconEl=document.getElementById('pu-icon-big');
+  if(pu.icon==='_wide_'){iconEl.innerHTML=paddleIconSVG(true,pu.color);iconEl.style.fontSize='0';}
+  else if(pu.icon==='_short_'){iconEl.innerHTML=paddleIconSVG(false,pu.color);iconEl.style.fontSize='0';}
+  else{iconEl.textContent=pu.icon;iconEl.innerHTML=pu.icon;iconEl.style.fontSize='36px';}
   document.getElementById('pu-who').textContent=playerName(side).toUpperCase();
   document.getElementById('pu-name').textContent=pu.name;document.getElementById('pu-name').style.color=pu.color;
   document.getElementById('pu-desc').textContent=pu.desc;
@@ -514,28 +730,71 @@ function showPuPopup(side,type){
   puPopupTimeout=setTimeout(()=>popup.classList.remove('show'),2200);
 }
 function activatePowerup(type,side,now){
-  if(activePowerup&&activePowerup.type==='decoy')decoyBalls=[];
-  activePowerup={type,side,startTime:now,endTime:now+POWER_UPS[type].duration};
+  if(hasAPU('decoy'))decoyBalls=[];
+  // In chaos mode, stack power-ups; in normal mode, clear old one first
+  if(gameMode!=='chaos'&&activePowerups.length)clearAllPowerups();
+  // Remove duplicate type if re-activating same power-up
+  activePowerups=activePowerups.filter(p=>p.type!==type);
+  // Black hole is instant — no duration-based active state
+  if(type==='blackhole'){
+    showPuPopup(side,type);(PU_SOUNDS[type]||SOUNDS[currentSkin].powerup)();
+    spawnPuParticles(W/2,H/2);
+    const margin=100;
+    state.ball.x=margin+Math.random()*(W-margin*2);
+    state.ball.y=60+Math.random()*(H-120);
+    const spd=Math.sqrt(state.ball.vx**2+state.ball.vy**2)||BASE_SPEED;
+    const ang=(Math.random()>.5?1:-1)*(Math.random()*.6+.2);
+    state.ball.vx=Math.cos(ang)*spd*(Math.random()>.5?1:-1);
+    state.ball.vy=Math.sin(ang)*spd;
+    shakeAmt=6;
+    return;
+  }
+  const ap={type,side,startTime:now,endTime:now+POWER_UPS[type].duration};
+  activePowerups.push(ap);
   if(type==='lead')leadPreSpeed=Math.sqrt(state.ball.vx**2+state.ball.vy**2);
   if(type==='decoy'){for(let i=0;i<3;i++)decoyBalls.push({x:state.ball.x,y:state.ball.y,vx:(Math.random()>.5?1:-1)*(3+Math.random()*3),vy:(Math.random()*4+1)*(Math.random()>.5?1:-1)});}
-  showPuPopup(side,type);SOUNDS[currentSkin].powerup();
-  spawnPuParticles(fieldPowerup?fieldPowerup.x:W/2,fieldPowerup?fieldPowerup.y:H/2);
+  if(type==='shield')shieldSide=side;
+  if(type==='defender'){
+    const dx=side==='left'?60:W-60-PW;
+    defenderPaddle={side,y:H/2-25,x:dx,h:50};
+  }
+  if(type==='portal'){
+    const mx=120;
+    portalA={x:mx+Math.random()*(W/2-mx-40),y:60+Math.random()*(H-120)};
+    portalB={x:W/2+40+Math.random()*(W/2-mx-40),y:60+Math.random()*(H-120)};
+  }
+  showPuPopup(side,type);(PU_SOUNDS[type]||SOUNDS[currentSkin].powerup)();
+  spawnPuParticles(W/2,H/2);
 }
-function clearPowerup(){
-  if(activePowerup&&activePowerup.type==='decoy')decoyBalls=[];
-  if(activePowerup&&activePowerup.type==='lead'&&leadPreSpeed!==null){
+function clearSinglePU(ap){
+  if(ap.type==='decoy')decoyBalls=[];
+  if(ap.type==='lead'&&leadPreSpeed!==null){
     const cur=Math.sqrt(state.ball.vx**2+state.ball.vy**2);
     if(cur>0){const sc=leadPreSpeed/cur;state.ball.vx*=sc;state.ball.vy*=sc;}
     leadPreSpeed=null;
   }
-  activePowerup=null;state.ball.size=10;
+  if(ap.type==='shield')shieldSide=null;
+  if(ap.type==='defender')defenderPaddle=null;
+  if(ap.type==='portal'){portalA=null;portalB=null;}
+}
+function clearAllPowerups(){
+  for(const ap of activePowerups)clearSinglePU(ap);
+  activePowerups=[];
 }
 function checkFieldPuCollect(side,now){
-  if(!fieldPowerup)return;
+  if(!fieldPowerups.length)return;
   const paddle=state[side],ph=getPH(side),LP=24,RP=W-24-PW;
   const padX=side==='left'?LP+PW:RP;
-  const dx=padX-fieldPowerup.x,dy=(paddle.y+ph/2)-fieldPowerup.y;
-  if(Math.sqrt(dx*dx+dy*dy)<30){activatePowerup(fieldPowerup.type,side,now);fieldPowerup=null;nextPuSpawn=now+POWERUP_SPAWN_INTERVAL;}
+  for(let i=fieldPowerups.length-1;i>=0;i--){
+    const fp=fieldPowerups[i];
+    const dx=padX-fp.x,dy=(paddle.y+ph/2)-fp.y;
+    if(Math.sqrt(dx*dx+dy*dy)<30){
+      spawnPuParticles(fp.x,fp.y);
+      activatePowerup(fp.type,side,now);
+      fieldPowerups.splice(i,1);
+      if(gameMode!=='chaos')nextPuSpawn=now+POWERUP_SPAWN_INTERVAL;
+    }
+  }
 }
 
 // Brick mode state
@@ -544,19 +803,23 @@ let bricks=[];
 function buildBricks(){
   bricks=[];
   const sk=SKINS[currentSkin];
-  const cols=5,rows=4,bw=42,bh=16,gap=6;
-  const totalW=cols*(bw+gap)-gap;
-  const startX=W/2-totalW/2;
-  const startY=110;
+  const rows=10,bw=42,bh=16,gap=6;
+  const totalH=rows*(bh+gap)-gap;
+  const startY=H/2-totalH/2;
+  const startX=W/2-bw/2;
   for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      bricks.push({
-        x:startX+c*(bw+gap),y:startY+r*(bh+gap),
-        w:bw,h:bh,
-        alive:true,
-        color:sk.brickColors[r%sk.brickColors.length]
-      });
-    }
+    // Random brick type
+    const roll=Math.random();
+    let btype='normal',hp=1,color=sk.brickColors[r%sk.brickColors.length];
+    if(roll<.15){btype='indestructible';color='#666';hp=Infinity;}
+    else if(roll<.35){btype='cracking';color='#8b2252';hp=3;}
+    else if(roll<.5){btype='powerup';color='#daa520';}
+    bricks.push({
+      x:startX,y:startY+r*(bh+gap),
+      w:bw,h:bh,
+      alive:true,
+      color,btype,hp,maxHp:hp
+    });
   }
 }
 
@@ -568,8 +831,19 @@ function checkBrickCollision(ball,bs){
       const overlapT=ball.y+bs-b.y, overlapB=b.y+b.h-ball.y;
       const minH=Math.min(overlapL,overlapR), minV=Math.min(overlapT,overlapB);
       if(minH<minV) ball.vx*=-1; else ball.vy*=-1;
-      b.alive=false;
-      spawnBrickParticles(b.x+b.w/2,b.y+b.h/2,b.color);
+      if(b.btype==='indestructible'){
+        SOUNDS[currentSkin].wall();shakeAmt=2;return true;
+      }
+      b.hp--;
+      if(b.hp<=0){
+        b.alive=false;
+        spawnBrickParticles(b.x+b.w/2,b.y+b.h/2,b.color);
+        // Power-up dropper: always spawn a field power-up at the brick's position
+        if(b.btype==='powerup'){
+          const type=PU_KEYS[Math.floor(Math.random()*PU_KEYS.length)];
+          fieldPowerups.push({type,x:b.x+b.w/2,y:b.y+b.h/2,spawnTime:performance.now(),bobOffset:Math.random()*Math.PI*2});
+        }
+      }
       SOUNDS[currentSkin].wall();
       shakeAmt=3;
       return true;
@@ -586,12 +860,42 @@ function spawnBrickParticles(x,y,color){
 }
 
 function drawBricks(){
+  const sk=SKINS[currentSkin];
+  const rounded=currentSkin!=='retro';
+  const rad=rounded?3:0;
   for(const b of bricks){
     if(!b.alive)continue;
+    ctx.save();
+    // Power-up bricks get a subtle glow
+    if(b.btype==='powerup'){ctx.shadowColor='#daa520';ctx.shadowBlur=8;}
     ctx.fillStyle=b.color;
-    ctx.fillRect(b.x,b.y,b.w,b.h);
+    if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.fill();}
+    else{ctx.fillRect(b.x,b.y,b.w,b.h);}
+    ctx.restore();
+    // Indestructible: cross-hatch pattern
+    if(b.btype==='indestructible'){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;
+      for(let i=-b.h;i<b.w;i+=6){
+        ctx.beginPath();ctx.moveTo(b.x+i,b.y);ctx.lineTo(b.x+i+b.h,b.y+b.h);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // Cracking: draw crack lines based on damage
+    if(b.btype==='cracking'&&b.hp<b.maxHp){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;
+      const cx=b.x+b.w/2,cy=b.y+b.h/2;
+      if(b.hp<=2){// first crack
+        ctx.beginPath();ctx.moveTo(cx-4,cy-5);ctx.lineTo(cx+2,cy);ctx.lineTo(cx-3,cy+6);ctx.stroke();
+      }
+      if(b.hp<=1){// heavy cracks
+        ctx.beginPath();ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx+1,cy-1);ctx.lineTo(cx+8,cy+4);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-10,cy-2);ctx.lineTo(cx-5,cy+3);ctx.stroke();
+      }
+      ctx.restore();
+    }
     ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;
-    ctx.strokeRect(b.x,b.y,b.w,b.h);
+    if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.stroke();}
+    else{ctx.strokeRect(b.x,b.y,b.w,b.h);}
   }
 }
 
@@ -599,13 +903,16 @@ function drawBricks(){
 // INIT / MATCH FLOW
 // ═══════════════════════════════════════════════════════════════════
 function initGameState(){
-  particles=[];decoyBalls=[];fieldPowerup=null;activePowerup=null;leadPreSpeed=null;rallyHits=0;aiError=0;
+  particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];leadPreSpeed=null;rallyHits=0;aiError=0;
+  shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;blackholePos=null;
   bricks=[];
   if(gameMode==='bricks')buildBricks();
   return{left:{y:H/2-PH/2,score:0},right:{y:H/2-PH/2,score:0},ball:{x:W/2,y:H/2,vx:0,vy:0,size:10,curve:0}};
 }
 
 function startMatch(m){
+  if(gameMode==='survival'){survStartMatch(m);return;}
+  if(W!==700||H!==450)resizeCanvas(700,450);
   mode=m;lastMode=m;
   nameLeft =document.getElementById('name-left').value.trim()||'Player 1';
   nameRight=document.getElementById('name-right').value.trim()||'Player 2';
@@ -644,7 +951,9 @@ function launchBall(side){
   const ph=getPH(side);
   const offset=(paddle.y+ph/2-H/2)/(H/2);
   const vyBias=offset*3.5;
-  state.ball.x=W/2;state.ball.y=H/2;
+  // In bricks mode, spawn ball on the serving player's side to avoid brick column
+  const spawnX=gameMode==='bricks'?(side==='left'?W*0.25:W*0.75):W/2;
+  state.ball.x=spawnX;state.ball.y=H/2;
   state.ball.vx=dir*BASE_SPEED;
   state.ball.vy=vyBias+(Math.random()*.5-.25);
   state.ball.vy=Math.max(-4.5,Math.min(4.5,state.ball.vy));
@@ -655,10 +964,10 @@ function launchBall(side){
 function resetBall(loser){
   state.ball.x=W/2;state.ball.y=H/2;
   state.ball.vx=0;state.ball.vy=0;
-  state.ball.size=10;state.ball.curve=0;
-  decoyBalls=[];leadPreSpeed=null;
-  if(activePowerup)clearPowerup();
-  fieldPowerup=null;
+  state.ball.size=10;state.ball.curve=0;state.ball._portalCooldown=false;
+  decoyBalls=[];leadPreSpeed=null;defenderPaddle=null;portalA=null;portalB=null;
+  if(activePowerups.length)clearAllPowerups();
+  fieldPowerups=[];
   nextPuSpawn=performance.now()+(gameMode==='chaos'?CHAOS_SPAWN_INTERVAL:POWERUP_SPAWN_INTERVAL);
   if(gameMode==='bricks')buildBricks();
   beginServe(loser);
@@ -666,7 +975,8 @@ function resetBall(loser){
 
 function showMenu(){
   if(animId)cancelAnimationFrame(animId);
-  ['menu','game-over','match-over'].forEach(id=>document.getElementById(id).style.display=id==='menu'?'flex':'none');
+  if(W!==700||H!==450)resizeCanvas(700,450);
+  ['menu','game-over','match-over','surv-turn'].forEach(id=>document.getElementById(id).style.display=id==='menu'?'flex':'none');
   document.getElementById('game-ui').style.display='none';
   document.getElementById('pu-popup').classList.remove('show');
   paused=false;applyMenuSkin();buildSkinGrid();buildLeaderboard();
@@ -675,7 +985,7 @@ function showMenu(){
 function togglePause(){
   paused=!paused;
   document.getElementById('pbtn').textContent=paused?'Resume':'Pause';
-  if(!paused)animId=requestAnimationFrame(update);
+  if(!paused)animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -763,12 +1073,24 @@ document.addEventListener('keydown',e=>{
   // Volume keys: +/= to increase, - to decrease
   if(e.key==='='||e.key==='+'){const v=Math.min(100,Math.round(masterVolume*100)+10);document.getElementById('vol-slider').value=v;setVolume(v);}
   if(e.key==='-'&&!e.ctrlKey&&!e.metaKey){const v=Math.max(0,Math.round(masterVolume*100)-10);document.getElementById('vol-slider').value=v;setVolume(v);}
+  if(e.key==='t'||e.key==='T'){if(inGame||document.getElementById('menu').style.display!=='none')toggleTestPanel();}
   if(inGame){
     if(e.key==='p'||e.key==='P'){e.preventDefault();togglePause();}
-    if(serving&&(e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W')){e.preventDefault();if(countdown===0)launchBall(serveSide);}
+    if(serving&&e.key===' '){e.preventDefault();if(countdown===0)launchBall(serveSide);}
+    // Magnet paddle release in survival mode
+    if(gameMode==='survival'&&survMagnetHeld&&e.key===' '){
+      e.preventDefault();
+      const sv=survState;if(sv){
+        const spd=Math.sqrt(survMagnetHeld.vx**2+survMagnetHeld.vy**2);
+        sv.ball.vx=survMagnetHeld.vx;sv.ball.vy=-Math.abs(survMagnetHeld.vy);
+        survMagnetHeld=null;
+      }
+    }
   }
-  if(overScreen&&e.key===' '){e.preventDefault();nextSetOrEnd();}
+  if(overScreen&&e.key===' '){e.preventDefault();if(gameMode==='survival')survStartMatch(lastMode);else nextSetOrEnd();}
   if(matchScreen&&e.key===' '){e.preventDefault();startMatch(lastMode);}
+  const survScreen=document.getElementById('surv-turn').style.display==='flex';
+  if(survScreen&&e.key===' '){e.preventDefault();survStartTurn();}
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
@@ -863,77 +1185,151 @@ function update(){
   }
 
   movePaddles(s,SPD);
-  const BS=getBallSize();s.ball.size=BS;
 
   // Power-up tick
-  if(activePowerup){
-    if(now>=activePowerup.endTime){clearPowerup();s.ball.size=10;}
-    else{
-      if(activePowerup.type==='curve'){s.ball.curve=(s.ball.curve||0)+.07;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12;}
-      if(activePowerup.type==='lead'){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){s.ball.vx*=.995;s.ball.vy*=.995;}}
+  // Expire finished power-ups
+  for(let i=activePowerups.length-1;i>=0;i--){
+    if(now>=activePowerups[i].endTime){clearSinglePU(activePowerups[i]);activePowerups.splice(i,1);}
+  }
+  let BS=getBallSize();
+  if(gameMode==='chaos'&&Math.random()<.005)BS=6+Math.random()*20;
+  s.ball.size=BS;
+  // Apply ongoing power-up effects
+  if(hasAPU('curve')){s.ball.curve=(s.ball.curve||0)+.07;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12;}
+  if(hasAPU('lead')){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){s.ball.vx*=.995;s.ball.vy*=.995;}}
+  // Magnet: pull ball toward holder's paddle only when ball is returning to their side
+  const magnetPU=getAPU('magnet');
+  if(magnetPU){
+    const mSide=magnetPU.side;
+    const returning=(mSide==='left'&&s.ball.vx<0)||(mSide==='right'&&s.ball.vx>0);
+    if(returning){
+      const pad=s[mSide],ph=getPH(mSide);
+      const padCX=mSide==='left'?24+PW:W-24;
+      const padCY=pad.y+ph/2;
+      const mdx=padCX-(s.ball.x+BS/2),mdy=padCY-(s.ball.y+BS/2);
+      const md=Math.sqrt(mdx*mdx+mdy*mdy);
+      if(md>5){const pull=.55;s.ball.vx+=mdx/md*pull*.3;s.ball.vy+=mdy/md*pull;}
     }
   }
 
   s.ball.x+=s.ball.vx;s.ball.y+=s.ball.vy;
 
   // Wall bounces
-  const bm=(activePowerup&&activePowerup.type==='bouncy')?1.08:1;
+  const bm=hasAPU('bouncy')?1.08:1;
   if(s.ball.y<=0){s.ball.y=0;s.ball.vy=Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
   if(s.ball.y+BS>=H){s.ball.y=H-BS;s.ball.vy=-Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
 
   // Paddle collisions
   const LP=24,RP=W-24-PW,leftPH=getPH('left'),rightPH=getPH('right');
+  // Curved paddle: opponent's paddle deflects at exaggerated angles
+  const cpPU=getAPU('curvedpaddle');
+  const curvedL=cpPU&&cpPU.side!=='left';
+  const curvedR=cpPU&&cpPU.side!=='right';
   if(s.ball.vx<0&&s.ball.x<=LP+PW&&s.ball.x>=LP-2&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
-    s.ball.x=LP+PW;rallyHits++;
+    s.ball.x=LP+PW;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.left.y+leftPH/2))/(leftPH/2);
+    const angMul=curvedL?1.4:.8;
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+SPEED_RAMP*rallyHits,MAX_SPEED);
-    s.ball.vx=Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
-    if(activePowerup&&activePowerup.type==='curve')s.ball.curve=0;
+    s.ball.vx=Math.abs(Math.cos(rel*angMul)*spd);s.ball.vy=Math.sin(rel*angMul)*spd;
+    if(hasAPU('curve'))s.ball.curve=0;
     spawnParticles(LP+PW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     checkFieldPuCollect('left',now);
   }
   if(s.ball.vx>0&&s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
-    s.ball.x=RP-BS;rallyHits++;
+    s.ball.x=RP-BS;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.right.y+rightPH/2))/(rightPH/2);
+    const angMul=curvedR?1.4:.8;
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+SPEED_RAMP*rallyHits,MAX_SPEED);
-    s.ball.vx=-Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
-    if(activePowerup&&activePowerup.type==='curve')s.ball.curve=0;
+    s.ball.vx=-Math.abs(Math.cos(rel*angMul)*spd);s.ball.vy=Math.sin(rel*angMul)*spd;
+    if(hasAPU('curve'))s.ball.curve=0;
     spawnParticles(RP,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     checkFieldPuCollect('right',now);
   }
 
   // Field PU hit / expire / spawn
-  if(fieldPowerup){
-    const puR=20,dx=s.ball.x+BS/2-fieldPowerup.x,dy=s.ball.y+BS/2-fieldPowerup.y;
+  for(let i=fieldPowerups.length-1;i>=0;i--){
+    const fp=fieldPowerups[i];
+    const puR=20,dx=s.ball.x+BS/2-fp.x,dy=s.ball.y+BS/2-fp.y;
     if(Math.sqrt(dx*dx+dy*dy)<puR+BS/2){
-      activatePowerup(fieldPowerup.type,s.ball.vx<0?'right':'left',now);
-      fieldPowerup=null;nextPuSpawn=now+(gameMode==='chaos'?CHAOS_SPAWN_INTERVAL:POWERUP_SPAWN_INTERVAL);
+      spawnPuParticles(fp.x,fp.y);
+      activatePowerup(fp.type,s.ball.vx<0?'right':'left',now);
+      fieldPowerups.splice(i,1);
+      if(gameMode!=='chaos')nextPuSpawn=now+POWERUP_SPAWN_INTERVAL;
+      continue;
     }
-    if(fieldPowerup&&now-fieldPowerup.spawnTime>POWERUP_LIFESPAN){fieldPowerup=null;nextPuSpawn=now+(gameMode==='chaos'?CHAOS_SPAWN_INTERVAL:POWERUP_SPAWN_INTERVAL)/2;}
+    if(now-fp.spawnTime>POWERUP_LIFESPAN){fieldPowerups.splice(i,1);if(gameMode!=='chaos')nextPuSpawn=now+POWERUP_SPAWN_INTERVAL/2;}
   }
-  if(!fieldPowerup&&now>=nextPuSpawn)spawnFieldPowerup(now);
+  const maxField=gameMode==='chaos'?5:1;
+  if(fieldPowerups.length<maxField&&now>=nextPuSpawn)spawnFieldPowerup(now);
+
+  // Portal teleport
+  if(hasAPU('portal')&&portalA&&portalB){
+    const portalR=22,bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
+    const daA=Math.sqrt((bcx-portalA.x)**2+(bcy-portalA.y)**2);
+    const daB=Math.sqrt((bcx-portalB.x)**2+(bcy-portalB.y)**2);
+    if(daA<portalR+BS/2&&!s.ball._portalCooldown){
+      s.ball.x=portalB.x-BS/2;s.ball.y=portalB.y-BS/2;s.ball._portalCooldown=true;
+      shakeAmt=4;spawnPuParticles(portalB.x,portalB.y);SOUNDS[currentSkin].wall();
+    }else if(daB<portalR+BS/2&&!s.ball._portalCooldown){
+      s.ball.x=portalA.x-BS/2;s.ball.y=portalA.y-BS/2;s.ball._portalCooldown=true;
+      shakeAmt=4;spawnPuParticles(portalA.x,portalA.y);SOUNDS[currentSkin].wall();
+    }else if(daA>portalR+BS/2+10&&daB>portalR+BS/2+10){
+      s.ball._portalCooldown=false;
+    }
+  }
+
+  // Defender paddle AI + collision
+  if(defenderPaddle){
+    const dp=defenderPaddle,dpH=dp.h,dpW=8;
+    const target=s.ball.y-dpH/2;
+    const dSpd=3.5;
+    if(Math.abs(dp.y+dpH/2-s.ball.y)>dSpd)dp.y+=(target>dp.y?1:-1)*dSpd;
+    dp.y=Math.max(0,Math.min(H-dpH,dp.y));
+    // Collision with defender paddle
+    if(dp.side==='left'&&s.ball.vx<0&&s.ball.x<=dp.x+dpW&&s.ball.x>=dp.x-2&&s.ball.y+BS>=dp.y&&s.ball.y<=dp.y+dpH){
+      s.ball.x=dp.x+dpW;s.ball.vx=Math.abs(s.ball.vx);
+      spawnParticles(dp.x+dpW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+    }
+    if(dp.side==='right'&&s.ball.vx>0&&s.ball.x+BS>=dp.x&&s.ball.x+BS<=dp.x+dpW+4&&s.ball.y+BS>=dp.y&&s.ball.y<=dp.y+dpH){
+      s.ball.x=dp.x-BS;s.ball.vx=-Math.abs(s.ball.vx);
+      spawnParticles(dp.x,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+    }
+  }
 
   // Brick collisions
   if(gameMode==='bricks'){
     checkBrickCollision(s.ball,BS);
-    if(bricks.every(b=>!b.alive))buildBricks();
+    if(bricks.every(b=>!b.alive||b.btype==='indestructible'))buildBricks();
   }
 
-  // Scoring
+  // Scoring (with shield save)
   if(s.ball.x<0){
-    s.right.score++;shakeAmt=8;
-    if(s.right.score>=winScore){SOUNDS[currentSkin].gameWin(mode==='ai');endSet('right');return;}
-    SOUNDS[currentSkin].score(false);resetBall('left');
+    if(shieldSide==='left'){
+      // Shield blocks the goal
+      s.ball.x=10;s.ball.vx=Math.abs(s.ball.vx);
+      shieldSide=null;shakeAmt=6;
+      spawnPuParticles(5,s.ball.y+BS/2);SOUNDS[currentSkin].wall();
+    }else{
+      s.right.score++;shakeAmt=8;
+      if(s.right.score>=winScore){SOUNDS[currentSkin].gameWin(mode==='ai');endSet('right');return;}
+      SOUNDS[currentSkin].score(false);resetBall('left');
+    }
   }
   if(s.ball.x>W){
-    s.left.score++;shakeAmt=8;
-    if(s.left.score>=winScore){SOUNDS[currentSkin].gameWin(true);endSet('left');return;}
-    SOUNDS[currentSkin].score(true);resetBall('right');
+    if(shieldSide==='right'){
+      s.ball.x=W-10-BS;s.ball.vx=-Math.abs(s.ball.vx);
+      shieldSide=null;shakeAmt=6;
+      spawnPuParticles(W-5,s.ball.y+BS/2);SOUNDS[currentSkin].wall();
+    }else{
+      s.left.score++;shakeAmt=8;
+      if(s.left.score>=winScore){SOUNDS[currentSkin].gameWin(true);endSet('left');return;}
+      SOUNDS[currentSkin].score(true);resetBall('right');
+    }
   }
 
-  if(activePowerup&&activePowerup.type==='decoy')decoyBalls=decoyBalls.filter(updateDecoyBall);
+  if(hasAPU('decoy'))decoyBalls=decoyBalls.filter(updateDecoyBall);
   if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8)%360;
   updateParticles();shakeAmt=Math.max(0,shakeAmt-.6);
   draw(now);animId=requestAnimationFrame(update);
@@ -941,12 +1337,21 @@ function update(){
 
 function movePaddles(s,SPD){
   const leftPH=getPH('left'),rightPH=getPH('right');
+  // Slowmo: opponent's paddle speed drops to 30%
+  const slowPU=getAPU('slowmo');
+  const leftSPD=(slowPU&&slowPU.side!=='left')?SPD*.3:SPD;
+  const rightSPD=(slowPU&&slowPU.side!=='right')?SPD*.3:SPD;
+  // Invert: opponent's controls are flipped
+  const invertPU=getAPU('invert');
+  const invertLeft=invertPU&&invertPU.side!=='left';
+  const invertRight=invertPU&&invertPU.side!=='right';
+  const lUp=invertLeft?-1:1, rUp=invertRight?-1:1;
   if(mode==='2p'){
-    if(keys['w']||keys['W'])s.left.y-=SPD;if(keys['s']||keys['S'])s.left.y+=SPD;
-    if(keys['ArrowUp'])s.right.y-=SPD;if(keys['ArrowDown'])s.right.y+=SPD;
+    if(keys['w']||keys['W'])s.left.y-=leftSPD*lUp;if(keys['s']||keys['S'])s.left.y+=leftSPD*lUp;
+    if(keys['ArrowUp'])s.right.y-=rightSPD*rUp;if(keys['ArrowDown'])s.right.y+=rightSPD*rUp;
   }else{
-    if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=SPD;
-    if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=SPD;
+    if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=leftSPD*lUp;
+    if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
     if(!serving)moveAI(s.right,s.ball);
   }
   if(touchY.left===null)s.left.y=Math.max(0,Math.min(H-leftPH,s.left.y));
@@ -959,7 +1364,7 @@ function movePaddles(s,SPD){
 function drawPaddle(x,y,ph,sk,glow){
   if(sk.neonGlow||glow){
     ctx.save();
-    ctx.shadowColor=sk.neonGlow?sk.fg:(activePowerup?POWER_UPS[activePowerup.type].color:sk.fg);
+    ctx.shadowColor=sk.neonGlow?sk.fg:(activePowerups.length?POWER_UPS[activePowerups[activePowerups.length-1].type].color:sk.fg);
     ctx.shadowBlur=sk.neonGlow?16:12;
   }
   ctx.fillStyle=sk.chaos?`hsl(${chaosHue+120},100%,60%)`:sk.fg;
@@ -968,60 +1373,79 @@ function drawPaddle(x,y,ph,sk,glow){
   else{ctx.fillRect(x,y,PW,ph);}
   if(sk.neonGlow||glow)ctx.restore();
 }
-function drawBall(x,y,BS,sk,isDecoy){
-  ctx.globalAlpha=isDecoy?.55:1;
-  if(sk.neonGlow&&!isDecoy){
+function drawBall(x,y,BS,sk,isDecoy,isGhost){
+  ctx.globalAlpha=isGhost?(.06+.04*Math.sin(performance.now()/300)):(isDecoy?.55:1);
+  if(sk.neonGlow&&!isDecoy&&!isGhost){
     ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=20;
   }
   ctx.fillStyle=isDecoy?(sk.chaos?`hsl(${chaosHue+90},80%,50%)`:sk.fg):(sk.chaos?`hsl(${chaosHue},100%,60%)`:sk.accent);
   if(sk.ballShape==='circle'){ctx.beginPath();ctx.arc(x+BS/2,y+BS/2,BS/2,0,Math.PI*2);ctx.fill();}
   else if(sk.ballShape==='diamond'){ctx.beginPath();ctx.moveTo(x+BS/2,y);ctx.lineTo(x+BS,y+BS/2);ctx.lineTo(x+BS/2,y+BS);ctx.lineTo(x,y+BS/2);ctx.closePath();ctx.fill();}
   else{ctx.fillRect(x,y,BS,BS);}
-  if(sk.neonGlow&&!isDecoy)ctx.restore();
+  if(sk.neonGlow&&!isDecoy&&!isGhost)ctx.restore();
   ctx.globalAlpha=1;
 }
 function drawFieldPowerup(now){
-  if(!fieldPowerup)return;
-  const pu=POWER_UPS[fieldPowerup.type],elapsed=now-fieldPowerup.spawnTime,lr=1-elapsed/POWERUP_LIFESPAN;
-  const bob=Math.sin((now/400)+fieldPowerup.bobOffset)*5,px=fieldPowerup.x,py=fieldPowerup.y+bob,R=22;
-  const pulse=.5+.5*Math.sin(now/200);
-  ctx.save();
-  ctx.globalAlpha=.2+.15*pulse;ctx.strokeStyle=pu.color;ctx.lineWidth=2.5;
-  ctx.beginPath();ctx.arc(px,py,R+4+pulse*4,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
-  ctx.beginPath();ctx.arc(px,py,R,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.7)';ctx.fill();
-  ctx.strokeStyle=pu.color;ctx.lineWidth=2;ctx.globalAlpha=lr;ctx.stroke();
-  ctx.strokeStyle=pu.color;ctx.lineWidth=3;ctx.globalAlpha=.6*lr;
-  ctx.beginPath();ctx.arc(px,py,R+2,-Math.PI/2,-Math.PI/2+Math.PI*2*lr);ctx.stroke();
-  ctx.globalAlpha=1;
-  ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pu.icon,px,py);
-  ctx.font='bold 8px monospace';ctx.fillStyle=pu.color;ctx.globalAlpha=lr;ctx.textBaseline='alphabetic';
-  ctx.fillText(fieldPowerup.type.toUpperCase(),px,py+R+12);
-  ctx.globalAlpha=1;ctx.restore();
+  for(const fp of fieldPowerups){
+    const pu=POWER_UPS[fp.type],elapsed=now-fp.spawnTime,lr=1-elapsed/POWERUP_LIFESPAN;
+    const bob=Math.sin((now/400)+fp.bobOffset)*5,px=fp.x,py=fp.y+bob,R=22;
+    const pulse=.5+.5*Math.sin(now/200);
+    ctx.save();
+    ctx.globalAlpha=.2+.15*pulse;ctx.strokeStyle=pu.color;ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(px,py,R+4+pulse*4,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.arc(px,py,R,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.7)';ctx.fill();
+    ctx.strokeStyle=pu.color;ctx.lineWidth=2;ctx.globalAlpha=lr;ctx.stroke();
+    ctx.strokeStyle=pu.color;ctx.lineWidth=3;ctx.globalAlpha=.6*lr;
+    ctx.beginPath();ctx.arc(px,py,R+2,-Math.PI/2,-Math.PI/2+Math.PI*2*lr);ctx.stroke();
+    ctx.globalAlpha=1;
+    if(pu.icon==='_wide_')drawPaddleIcon(px,py,24,pu.color);
+    else if(pu.icon==='_short_')drawPaddleIcon(px,py,12,pu.color);
+    else{ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pu.icon,px,py);}
+    ctx.font='bold 8px monospace';ctx.fillStyle=pu.color;ctx.globalAlpha=lr;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(fp.type.toUpperCase(),px,py+R+12);
+    ctx.globalAlpha=1;ctx.restore();
+  }
 }
 function drawActivePuHud(now){
-  if(!activePowerup)return;
-  const pu=POWER_UPS[activePowerup.type],ratio=Math.max(0,1-(now-activePowerup.startTime)/pu.duration);
-  const barW=120,barH=18,side=activePowerup.side,bx=side==='left'?30:W-30-barW,by=H-28;
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,.6)';ctx.beginPath();ctx.roundRect(bx,by,barW,barH,6);ctx.fill();
-  ctx.fillStyle=pu.color;ctx.globalAlpha=.85;ctx.beginPath();ctx.roundRect(bx,by,barW*ratio,barH,6);ctx.fill();
-  ctx.globalAlpha=1;ctx.font='10px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#fff';
-  ctx.fillText(pu.icon+' '+pu.name,bx+6,by+barH/2);ctx.textBaseline='alphabetic';ctx.restore();
+  if(!activePowerups.length)return;
+  const sk=SKINS[currentSkin];
+  const barW=130,barH=20;
+  // Stack bars: left-side PUs on bottom-left, right-side on bottom-right
+  let leftIdx=0,rightIdx=0;
+  for(const ap of activePowerups){
+    const pu=POWER_UPS[ap.type],ratio=Math.max(0,1-(now-ap.startTime)/pu.duration);
+    const idx=ap.side==='left'?leftIdx++:rightIdx++;
+    const bx=ap.side==='left'?30:W-30-barW;
+    const by=H-32-idx*(barH+4);
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.beginPath();ctx.roundRect(bx,by,barW,barH,7);ctx.fill();
+    ctx.strokeStyle=sk.accent;ctx.lineWidth=1.5;ctx.globalAlpha=.5;ctx.beginPath();ctx.roundRect(bx,by,barW,barH,7);ctx.stroke();
+    ctx.globalAlpha=.85;ctx.fillStyle=pu.color;ctx.beginPath();ctx.roundRect(bx,by,barW*ratio,barH,7);ctx.fill();
+    ctx.globalAlpha=1;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#fff';
+    if(pu.icon==='_wide_')drawPaddleIcon(bx+10,by+barH/2,14,pu.color);
+    else if(pu.icon==='_short_')drawPaddleIcon(bx+10,by+barH/2,8,pu.color);
+    else{ctx.font='12px serif';ctx.fillText(pu.icon,bx+4,by+barH/2);}
+    ctx.font='bold 9px monospace';ctx.fillStyle='#fff';ctx.fillText(pu.name,bx+22,by+barH/2);
+    ctx.textBaseline='alphabetic';ctx.restore();
+  }
 }
 function drawRallyHud(){
   if(rallyHits<1)return;
   const sk=SKINS[currentSkin];
   const gb=globalRallyPB();
   ctx.save();ctx.textAlign='center';
-  // Smooth fade: 0 at hit 1, full at hit 4+
   const rallyAlpha=Math.min(1,(rallyHits)/4)*.8;
   ctx.globalAlpha=rallyAlpha;
+  // Pop scale animation
+  const popElapsed=performance.now()-rallyPopT;
+  const popScale=popElapsed<250?1+.3*(1-popElapsed/250):1;
+  ctx.translate(W/2,H-28);ctx.scale(popScale,popScale);
   ctx.font='bold 13px monospace';ctx.fillStyle=sk.chaos?`hsl(${chaosHue+60},100%,70%)`:sk.accent;
-  ctx.fillText(`RALLY  ${rallyHits}`,W/2,H-28);
+  ctx.fillText(`RALLY  ${rallyHits}`,0,0);
   if(rallyHits>=sessionRallyPB&&rallyHits>=5){
     ctx.globalAlpha=rallyAlpha*.75;
     ctx.font='9px monospace';ctx.fillStyle=sk.fg;
-    ctx.fillText('best rally!',W/2,H-14);
+    ctx.fillText('best rally!',0,14);
   }
   ctx.globalAlpha=1;ctx.restore();
 }
@@ -1092,12 +1516,14 @@ function drawServe(now){
   ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
   ctx.fillStyle=sk.chaos?`hsl(${chaosHue+60},100%,75%)`:sk.fg;
   ctx.font=sk.scoreFont;ctx.textAlign='center';
+  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
   ctx.fillText(s.left.score,W/2-80,60);ctx.fillText(s.right.score,W/2+80,60);
-  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.5;
+  ctx.restore();
+  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.6;
   ctx.fillText(nameLeft,W/2-80,76);ctx.fillText(nameRight,W/2+80,76);ctx.globalAlpha=1;
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
-  const lG=activePowerup&&((activePowerup.type==='widepaddle'&&activePowerup.side==='left')||(activePowerup.type==='shortpaddle'&&activePowerup.side==='right'));
-  const rG=activePowerup&&((activePowerup.type==='widepaddle'&&activePowerup.side==='right')||(activePowerup.type==='shortpaddle'&&activePowerup.side==='left'));
+  const lG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='left'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='right';
+  const rG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='right'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='left';
   drawPaddle(LP,s.left.y,dlPH,sk,lG);drawPaddle(RP,s.right.y,drPH,sk,rG);
   drawParticles();
 
@@ -1115,7 +1541,7 @@ function drawServe(now){
     ctx.fillText(`${serveName}'s serve`,W/2,H/2-18);
     ctx.font='11px monospace';ctx.fillStyle=sk.accent;
     ctx.globalAlpha=.5+.5*Math.sin(now/300);
-    if(humanServes)ctx.fillText('move paddle to aim \u00b7 space to serve',W/2,H/2+14);
+    if(humanServes)ctx.fillText('W/S or \u2191/\u2193 to aim \u00b7 space to serve',W/2,H/2+14);
     ctx.globalAlpha=1;
     if(mode==='ai'&&serveSide==='right'&&now-countdownT>800)launchBall(serveSide);
   }
@@ -1131,7 +1557,10 @@ function drawServe(now){
 
 function draw(now){
   const s=state,sk=SKINS[currentSkin];
-  const sx=(Math.random()-.5)*shakeAmt,sy=(Math.random()-.5)*shakeAmt;
+  // Chaos mode: constant subtle screen wobble
+  const chaosWobbleX=gameMode==='chaos'?Math.sin(now/170)*1.5:0;
+  const chaosWobbleY=gameMode==='chaos'?Math.cos(now/210)*1.2:0;
+  const sx=(Math.random()-.5)*shakeAmt+chaosWobbleX,sy=(Math.random()-.5)*shakeAmt+chaosWobbleY;
   ctx.save();ctx.translate(sx,sy);
 
   ctx.fillStyle=sk.chaos?`hsl(${chaosHue+200},60%,5%)`:sk.bg;ctx.fillRect(-4,-4,W+8,H+8);
@@ -1149,8 +1578,10 @@ function draw(now){
 
   ctx.fillStyle=sk.chaos?`hsl(${chaosHue+60},100%,75%)`:sk.fg;
   ctx.font=sk.scoreFont;ctx.textAlign='center';
+  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
   ctx.fillText(s.left.score,W/2-80,60);ctx.fillText(s.right.score,W/2+80,60);
-  ctx.font='10px monospace';ctx.globalAlpha=.45;
+  ctx.restore();
+  ctx.font='10px monospace';ctx.globalAlpha=.6;
   ctx.fillText(nameLeft,W/2-80,76);ctx.fillText(nameRight,W/2+80,76);ctx.globalAlpha=1;
 
   if(matchFormat>1){
@@ -1159,12 +1590,79 @@ function draw(now){
   }
 
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
-  const lG=activePowerup&&((activePowerup.type==='widepaddle'&&activePowerup.side==='left')||(activePowerup.type==='shortpaddle'&&activePowerup.side==='right'));
-  const rG=activePowerup&&((activePowerup.type==='widepaddle'&&activePowerup.side==='right')||(activePowerup.type==='shortpaddle'&&activePowerup.side==='left'));
-  drawPaddle(LP,s.left.y,dlPH,sk,lG);drawPaddle(RP,s.right.y,drPH,sk,rG);
+  const lG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='left'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='right';
+  const rG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='right'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='left';
+  // Curved paddle visual — draw convex bulge on opponent's paddle
+  const cpPU=getAPU('curvedpaddle');
+  const curvedL=cpPU&&cpPU.side!=='left';
+  const curvedR=cpPU&&cpPU.side!=='right';
+  drawPaddle(LP,s.left.y,dlPH,sk,lG);
+  if(curvedL){ctx.save();ctx.strokeStyle=POWER_UPS.curvedpaddle.color;ctx.lineWidth=3;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(LP-8,s.left.y+dlPH/2,dlPH/2,Math.PI*.65,Math.PI*1.35,true);ctx.stroke();ctx.restore();}
+  drawPaddle(RP,s.right.y,drPH,sk,rG);
+  if(curvedR){ctx.save();ctx.strokeStyle=POWER_UPS.curvedpaddle.color;ctx.lineWidth=3;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(RP+PW+8,s.right.y+drPH/2,drPH/2,Math.PI*.35,Math.PI*-.35,true);ctx.stroke();ctx.restore();}
+  // Defender paddle
+  if(defenderPaddle){
+    const dp=defenderPaddle;
+    ctx.save();ctx.globalAlpha=.7;ctx.fillStyle=POWER_UPS.defender.color;
+    ctx.fillRect(dp.x,dp.y,8,dp.h);
+    ctx.strokeStyle=POWER_UPS.defender.color;ctx.lineWidth=1;ctx.globalAlpha=.3;
+    ctx.strokeRect(dp.x-1,dp.y-1,10,dp.h+2);
+    ctx.restore();
+  }
+  // Shield indicator — glowing line at the goal
+  if(shieldSide){
+    const sx2=shieldSide==='left'?2:W-4;
+    ctx.save();ctx.fillStyle=POWER_UPS.shield.color;ctx.globalAlpha=.5+.3*Math.sin(now/200);
+    ctx.fillRect(sx2,0,4,H);
+    ctx.shadowColor=POWER_UPS.shield.color;ctx.shadowBlur=12;ctx.fillRect(sx2,0,4,H);
+    ctx.restore();
+  }
+  // Portal visuals — black centre with purple swirling pixels
+  if(hasAPU('portal')&&portalA&&portalB){
+    [portalA,portalB].forEach((p,i)=>{
+      ctx.save();
+      // Black void centre
+      const grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,22);
+      grd.addColorStop(0,'rgba(0,0,0,.95)');
+      grd.addColorStop(.7,'rgba(20,0,30,.8)');
+      grd.addColorStop(1,'rgba(80,0,120,.0)');
+      ctx.fillStyle=grd;
+      ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.fill();
+      // Outer purple ring
+      const pulse=.5+.3*Math.sin(now/250+(i*Math.PI));
+      ctx.globalAlpha=.4+.2*pulse;ctx.strokeStyle='#a855f7';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);ctx.stroke();
+      // Swirling purple pixels/dots
+      const dotCount=12;
+      const baseAng=now/500+(i*Math.PI);
+      for(let d=0;d<dotCount;d++){
+        const ang=baseAng+(Math.PI*2/dotCount)*d;
+        const r=8+6*Math.sin(now/300+d*1.3);
+        const dx=p.x+Math.cos(ang)*r;
+        const dy=p.y+Math.sin(ang)*r;
+        const sz=1.5+Math.sin(now/200+d*2)*.8;
+        ctx.globalAlpha=.5+.4*Math.sin(now/180+d);
+        ctx.fillStyle=d%3===0?'#c084fc':d%3===1?'#a855f7':'#7c3aed';
+        ctx.fillRect(dx-sz/2,dy-sz/2,sz,sz);
+      }
+      // Inner swirl — second layer, tighter orbit
+      for(let d=0;d<8;d++){
+        const ang=-baseAng*1.4+(Math.PI*2/8)*d;
+        const r=3+3*Math.sin(now/250+d*.9);
+        const dx=p.x+Math.cos(ang)*r;
+        const dy=p.y+Math.sin(ang)*r;
+        ctx.globalAlpha=.6+.3*Math.sin(now/150+d);
+        ctx.fillStyle='#e9d5ff';
+        ctx.fillRect(dx-1,dy-1,2,2);
+      }
+      ctx.restore();
+    });
+  }
   drawParticles();drawFieldPowerup(now);
-  if(activePowerup&&activePowerup.type==='decoy'){for(const db of decoyBalls)drawBall(db.x,db.y,10,sk,true);}
-  const BS=s.ball.size||10;drawBall(s.ball.x,s.ball.y,BS,sk,false);
+  if(hasAPU('decoy')){for(const db of decoyBalls)drawBall(db.x,db.y,10,sk,true);}
+  const BS=s.ball.size||10;
+  const isGhost=hasAPU('ghost');
+  drawBall(s.ball.x,s.ball.y,BS,sk,false,isGhost);
   drawActivePuHud(now);drawRallyHud();
   if(gameMode==='bricks')drawBricks();
   if(gameMode==='chaos'){
@@ -1192,14 +1690,743 @@ function draw(now){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SURVIVAL MODE
+// ═══════════════════════════════════════════════════════════════════
+const SURV_PU_KEYS=['decoy','widepaddle','bigball','shield','bouncy','laser','freeze','bomb','multiball','survslowmo','magnetpaddle','fireball','shrinkrow'];
+let survState=null;
+let survTimes={left:null,right:null};
+let survTurn='left';
+let survDecoyBalls=[];
+let survExtraBalls=[];   // multi-ball extra balls
+let survLaser=null;      // {active,endTime} — laser beam from paddle
+let survFrozen=false;    // freeze: bricks stop descending
+let survBomb=false;      // bomb: next brick hit explodes in radius
+let survMagnetHeld=null; // magnet paddle: {ball held, angle aiming}
+let survFireball=false;  // fireball: ball passes through bricks
+
+function survBuildRow(y){
+  const gap=4,bh=16;
+  const cols=Math.floor((W+gap)/(60+gap)); // fill full width
+  const bw=(W-gap*(cols-1))/cols;           // stretch bricks to fit
+  const row=[];
+  for(let c=0;c<cols;c++){
+    // ~15% chance of a gap (empty space)
+    if(Math.random()<.15)continue;
+    const roll=Math.random();
+    let btype='normal',hp=1,color;
+    const sk=SKINS[currentSkin];
+    color=sk.brickColors?sk.brickColors[c%sk.brickColors.length]:'#888';
+    if(roll<.20){btype='cracking';color='#8b2252';hp=3;}
+    else if(roll<.35){btype='powerup';color='#daa520';}
+    row.push({x:c*(bw+gap),y,w:bw,h:bh,alive:true,color,btype,hp,maxHp:hp});
+  }
+  return row;
+}
+
+function survInit(){
+  resizeCanvas(700,550);
+  const sk=SKINS[currentSkin];
+  const pw=130,ph=12;
+  survDecoyBalls=[];survExtraBalls=[];
+  fieldPowerups=[];activePowerups=[];
+  shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;
+  survLaser=null;survFrozen=false;survBomb=false;survMagnetHeld=null;survFireball=false;
+  particles=[];
+  const bricks=[];
+  // Start with 3 rows off-screen that scroll in
+  for(let r=0;r<3;r++){
+    survBuildRow(-60+r*22).forEach(b=>bricks.push(b));
+  }
+  survState={
+    paddle:{x:W/2-pw/2,w:pw,h:ph,baseW:pw},
+    ball:{x:W/2,y:H-40,vx:3.5,vy:-4,size:10},
+    bricks,
+    startTime:performance.now(),
+    alive:true,
+    brickSpeed:.2, // pixels per frame — gentler start
+    lastRowTime:performance.now(),
+    rowInterval:8000, // ms between new row spawns — starts slow
+    score:0,
+    nextPuSpawn:performance.now()+8000,
+  };
+}
+
+function survStartMatch(m){
+  mode=m;lastMode=m;
+  nameLeft=document.getElementById('name-left').value.trim()||'Player 1';
+  nameRight=document.getElementById('name-right').value.trim()||'Player 2';
+  if(m==='ai')nameRight='AI';
+  survTimes={left:null,right:null};
+  survTurn='left';
+  survShowTurnScreen();
+}
+
+function survShowTurnScreen(){
+  if(animId)cancelAnimationFrame(animId);
+  resizeCanvas(700,450);window.scrollTo(0,0);
+  const sk=SKINS[currentSkin];
+  const name=survTurn==='left'?nameLeft:nameRight;
+  const otherTime=survTurn==='left'?null:survTimes.left;
+  document.querySelectorAll('#menu,#game-over,#match-over,#game-ui,#surv-turn').forEach(e=>e.style.display='none');
+  ['pw','surv-turn'].forEach(id=>{
+    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
+  });
+  document.body.style.background=sk.menuBg;
+  document.getElementById('surv-turn-txt').textContent=`${name}'s turn`;
+  document.getElementById('surv-turn-txt').style.color=sk.menuFg;
+  const info=otherTime!==null?`${nameLeft} survived ${(otherTime/1000).toFixed(1)}s — beat that!`:'Survive as long as you can!';
+  document.getElementById('surv-turn-info').textContent=info;
+  document.getElementById('surv-turn-info').style.color=sk.menuFg;
+  document.getElementById('surv-go-btn').style.background=sk.menuFg;
+  document.getElementById('surv-go-btn').style.color=sk.menuBg;
+  document.getElementById('surv-turn').style.display='flex';
+}
+
+function survStartTurn(){
+  document.querySelectorAll('#surv-turn,#menu,#game-over,#match-over').forEach(e=>e.style.display='none');
+  document.getElementById('game-ui').style.display='flex';
+  const name=survTurn==='left'?nameLeft:nameRight;
+  document.getElementById('mlabel').textContent=`${name} · SURVIVAL`;
+  applyGameSkin();
+  survInit();
+  keys={};
+  if(animId)cancelAnimationFrame(animId);
+  animId=requestAnimationFrame(survUpdate);
+}
+
+function survUpdate(){
+  if(paused){animId=requestAnimationFrame(survUpdate);return;}
+  const now=performance.now();
+  const sv=survState;
+  if(!sv||!sv.alive)return;
+
+  // Paddle movement — horizontal
+  const SPD=6;
+  const isAI=mode==='ai'&&survTurn==='right';
+  if(isAI){
+    // AI tracks ball x
+    const target=sv.ball.x-sv.paddle.w/2;
+    const diff=target-sv.paddle.x;
+    if(Math.abs(diff)>SPD)sv.paddle.x+=Math.sign(diff)*SPD;
+    else sv.paddle.x=target;
+    // AI auto-releases magnet paddle after brief hold
+    if(survMagnetHeld){
+      sv.ball.vx=survMagnetHeld.vx;sv.ball.vy=-Math.abs(survMagnetHeld.vy);
+      survMagnetHeld=null;
+    }
+  }else{
+    if(keys['a']||keys['A']||keys['ArrowLeft']||keys['w']||keys['W'])sv.paddle.x-=SPD;
+    if(keys['d']||keys['D']||keys['ArrowRight']||keys['s']||keys['S'])sv.paddle.x+=SPD;
+  }
+  sv.paddle.x=Math.max(0,Math.min(W-sv.paddle.w,sv.paddle.x));
+
+  // Wide paddle power-up
+  const widePU=getAPU('widepaddle');
+  sv.paddle.w=widePU?sv.paddle.baseW*1.6:sv.paddle.baseW;
+
+  // Ball size
+  let BS=10;
+  if(hasAPU('bigball'))BS=26;
+  sv.ball.size=BS;
+
+  // Power-up expiry
+  for(let i=activePowerups.length-1;i>=0;i--){
+    if(now>=activePowerups[i].endTime){survClearPU(activePowerups[i].type);clearSinglePU(activePowerups[i]);activePowerups.splice(i,1);}
+  }
+
+  // Magnet paddle: if ball is held, skip normal ball physics
+  if(survMagnetHeld){
+    // Ball tracks paddle
+    sv.ball.x=sv.paddle.x+sv.paddle.w/2-BS/2;
+    sv.ball.y=H-24-BS-2;
+    // Launch with spacebar (handled in keydown → sets survMagnetHeld=null and gives ball velocity)
+  }else{
+    // Ball physics
+    sv.ball.x+=sv.ball.vx;sv.ball.y+=sv.ball.vy;
+  }
+
+  const bm=hasAPU('bouncy')?1.06:1;
+
+  // Wall bounces (left, right, top)
+  if(sv.ball.x<=0){sv.ball.x=0;sv.ball.vx=Math.abs(sv.ball.vx)*bm;SOUNDS[currentSkin].wall();shakeAmt=1.5;}
+  if(sv.ball.x+BS>=W){sv.ball.x=W-BS;sv.ball.vx=-Math.abs(sv.ball.vx)*bm;SOUNDS[currentSkin].wall();shakeAmt=1.5;}
+  if(sv.ball.y<=0){sv.ball.y=0;sv.ball.vy=Math.abs(sv.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=1.5;}
+
+  // Bottom — ball lost (check main ball + extra balls)
+  if(sv.ball.y+BS>=H){
+    if(shieldSide){
+      sv.ball.y=H-BS-2;sv.ball.vy=-Math.abs(sv.ball.vy);
+      shieldSide=null;shakeAmt=6;
+      spawnPuParticles(sv.ball.x,H);SOUNDS[currentSkin].wall();
+    }else if(survExtraBalls.some(eb=>eb.alive)){
+      // Main ball lost but extra balls survive — swap first alive extra to main
+      const eb=survExtraBalls.find(e=>e.alive);
+      sv.ball.x=eb.x;sv.ball.y=eb.y;sv.ball.vx=eb.vx;sv.ball.vy=eb.vy;
+      eb.alive=false;shakeAmt=4;
+    }else{
+      sv.alive=false;
+      const elapsed=now-sv.startTime;
+      survTimes[survTurn]=elapsed;
+      shakeAmt=10;SOUNDS[currentSkin].score(false);
+      survEndTurn(elapsed);
+      return;
+    }
+  }
+
+  // Paddle collision
+  const px=sv.paddle.x,py=H-24,pw=sv.paddle.w,ph=sv.paddle.h;
+  if(!survMagnetHeld&&sv.ball.vy>0&&sv.ball.y+BS>=py&&sv.ball.y+BS<=py+ph+4&&sv.ball.x+BS>=px&&sv.ball.x<=px+pw){
+    if(hasAPU('magnetpaddle')){
+      // Catch ball on paddle
+      survMagnetHeld={vx:sv.ball.vx,vy:sv.ball.vy};
+      sv.ball.y=py-BS-2;
+    }else{
+      sv.ball.y=py-BS;
+      const rel=(sv.ball.x+BS/2-(px+pw/2))/(pw/2);
+      const ang=rel*1.1;
+      const spd=Math.sqrt(sv.ball.vx**2+sv.ball.vy**2)*bm;
+      const clampSpd=Math.min(spd,10);
+      sv.ball.vx=Math.sin(ang)*clampSpd;
+      sv.ball.vy=-Math.abs(Math.cos(ang)*clampSpd);
+    }
+    spawnParticles(sv.ball.x+BS/2,py,0);SOUNDS[currentSkin].paddle();shakeAmt=2;
+  }
+
+  // Helper: destroy brick & maybe drop powerup
+  function destroyBrick(b){
+    b.alive=false;sv.score++;
+    spawnBrickParticles(b.x+b.w/2,b.y+b.h/2,b.color);
+    if(b.btype==='powerup'){
+      const type=SURV_PU_KEYS[Math.floor(Math.random()*SURV_PU_KEYS.length)];
+      fieldPowerups.push({type,x:b.x+b.w/2,y:b.y+b.h/2,spawnTime:now,bobOffset:Math.random()*Math.PI*2});
+    }
+  }
+
+  // Helper: bomb explosion at a point
+  function bombExplode(cx,cy){
+    const R=80;
+    for(const b2 of sv.bricks){
+      if(!b2.alive)continue;
+      const bx=b2.x+b2.w/2,by=b2.y+b2.h/2;
+      if(Math.sqrt((bx-cx)**2+(by-cy)**2)<R){destroyBrick(b2);}
+    }
+    // Big explosion particles
+    for(let i=0;i<30;i++){
+      const angle=Math.random()*Math.PI*2,spd=Math.random()*5+2;
+      particles.push({x:cx,y:cy,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1,decay:.02,size:Math.random()*5+2,hue:Math.random()*60,brickColor:`hsl(${Math.random()*40+10},100%,55%)`});
+    }
+    shakeAmt=12;SOUNDS[currentSkin].wall();
+    survBomb=false;
+  }
+
+  // Brick collisions (main ball)
+  for(const b of sv.bricks){
+    if(!b.alive)continue;
+    if(sv.ball.x+BS>b.x&&sv.ball.x<b.x+b.w&&sv.ball.y+BS>b.y&&sv.ball.y<b.y+b.h){
+      if(!survFireball){
+        const overlapL=sv.ball.x+BS-b.x,overlapR=b.x+b.w-sv.ball.x;
+        const overlapT=sv.ball.y+BS-b.y,overlapB=b.y+b.h-sv.ball.y;
+        const minH=Math.min(overlapL,overlapR),minV=Math.min(overlapT,overlapB);
+        if(minH<minV)sv.ball.vx*=-1;else sv.ball.vy*=-1;
+      }
+      // Fireball: ball passes through (no bounce), still damages bricks
+      b.hp--;
+      if(b.hp<=0){
+        if(survBomb){bombExplode(b.x+b.w/2,b.y+b.h/2);}
+        else{destroyBrick(b);SOUNDS[currentSkin].wall();}
+      }else{
+        SOUNDS[currentSkin].wall();shakeAmt=1;
+      }
+      if(!survFireball)break;
+    }
+  }
+
+  // Multi-ball extra balls physics
+  for(const eb of survExtraBalls){
+    if(!eb.alive)continue;
+    eb.x+=eb.vx;eb.y+=eb.vy;eb.size=BS;
+    if(eb.x<=0){eb.x=0;eb.vx=Math.abs(eb.vx);}
+    if(eb.x+BS>=W){eb.x=W-BS;eb.vx=-Math.abs(eb.vx);}
+    if(eb.y<=0){eb.y=0;eb.vy=Math.abs(eb.vy);}
+    if(eb.y+BS>=H){eb.alive=false;continue;}
+    // Extra ball paddle collision
+    if(eb.vy>0&&eb.y+BS>=py&&eb.y+BS<=py+ph+4&&eb.x+BS>=px&&eb.x<=px+pw){
+      eb.y=py-BS;
+      const rel=(eb.x+BS/2-(px+pw/2))/(pw/2);
+      const ang=rel*1.1;
+      const spd=Math.sqrt(eb.vx**2+eb.vy**2);
+      eb.vx=Math.sin(ang)*Math.min(spd,10);
+      eb.vy=-Math.abs(Math.cos(ang)*Math.min(spd,10));
+    }
+    // Extra ball brick collision
+    for(const b of sv.bricks){
+      if(!b.alive)continue;
+      if(eb.x+BS>b.x&&eb.x<b.x+b.w&&eb.y+BS>b.y&&eb.y<b.y+b.h){
+        if(!survFireball){
+          const oL=eb.x+BS-b.x,oR=b.x+b.w-eb.x,oT=eb.y+BS-b.y,oB=b.y+b.h-eb.y;
+          if(Math.min(oL,oR)<Math.min(oT,oB))eb.vx*=-1;else eb.vy*=-1;
+        }
+        b.hp--;
+        if(b.hp<=0){if(survBomb)bombExplode(b.x+b.w/2,b.y+b.h/2);else{destroyBrick(b);SOUNDS[currentSkin].wall();}}
+        if(!survFireball)break;
+      }
+    }
+  }
+  survExtraBalls=survExtraBalls.filter(e=>e.alive);
+
+  // Decoy ball brick breaking
+  for(const db of survDecoyBalls){
+    db.x+=db.vx;db.y+=db.vy;
+    if(db.x<0||db.x>W||db.y<0||db.y>H){db.dead=true;continue;}
+    for(const b of sv.bricks){
+      if(!b.alive)continue;
+      if(db.x>b.x&&db.x<b.x+b.w&&db.y>b.y&&db.y<b.y+b.h){
+        b.hp--;
+        if(b.hp<=0){destroyBrick(b);}
+        db.dead=true;break;
+      }
+    }
+  }
+  survDecoyBalls=survDecoyBalls.filter(d=>!d.dead);
+
+  // Laser beam — fires upward from paddle, destroys bricks in path
+  if(survLaser&&survLaser.active&&now<survLaser.endTime){
+    const lx=sv.paddle.x+sv.paddle.w/2;
+    const ly=py;
+    // Laser beam particles (smoke/sparks)
+    if(Math.random()<.4){
+      particles.push({x:lx+(Math.random()-0.5)*10,y:ly-Math.random()*20,vx:(Math.random()-.5)*2,vy:-Math.random()*2-1,life:1,decay:.06,size:Math.random()*3+1,hue:200,brickColor:'rgba(100,200,255,.6)'});
+    }
+    // Destroy bricks in beam path (narrow column)
+    const beamW=14;
+    for(const b of sv.bricks){
+      if(!b.alive)continue;
+      if(b.x+b.w>lx-beamW/2&&b.x<lx+beamW/2&&b.y<ly&&b.y+b.h>0){
+        b.hp--;
+        if(b.hp<=0){destroyBrick(b);shakeAmt=Math.min(shakeAmt+1,4);}
+      }
+    }
+  }
+  if(survLaser&&now>=survLaser.endTime)survLaser=null;
+
+  // Move bricks down (freeze / slow-mo aware)
+  const elapsed=(now-sv.startTime)/1000;
+  sv.brickSpeed=.2+elapsed/240;
+  let effectiveSpeed=sv.brickSpeed;
+  if(survFrozen)effectiveSpeed=0;
+  else if(hasAPU('survslowmo'))effectiveSpeed*=.4;
+  for(const b of sv.bricks)b.y+=effectiveSpeed;
+
+  // Field power-ups also fall with bricks
+  for(const fp of fieldPowerups)fp.y+=effectiveSpeed;
+
+  // Field power-up collection (ball hits OR paddle contact)
+  for(let i=fieldPowerups.length-1;i>=0;i--){
+    const fp=fieldPowerups[i];
+    const dx=sv.ball.x+BS/2-fp.x,dy=sv.ball.y+BS/2-fp.y;
+    if(Math.sqrt(dx*dx+dy*dy)<20+BS/2){
+      spawnPuParticles(fp.x,fp.y);survActivatePU(fp.type,now);fieldPowerups.splice(i,1);continue;
+    }
+    if(fp.y>=py-10&&fp.y<=py+ph+4&&fp.x>=px&&fp.x<=px+pw){
+      spawnPuParticles(fp.x,fp.y);survActivatePU(fp.type,now);fieldPowerups.splice(i,1);continue;
+    }
+    if(now-fp.spawnTime>POWERUP_LIFESPAN||fp.y>H+20){fieldPowerups.splice(i,1);}
+  }
+
+  // Spawn new rows
+  sv.rowInterval=Math.max(2500,8000-elapsed*23);
+  if(now-sv.lastRowTime>=sv.rowInterval){
+    sv.lastRowTime=now;
+    const row=survBuildRow(-18);
+    row.forEach(b=>sv.bricks.push(b));
+  }
+
+  // Check lose: any brick touches bottom (paddle area)
+  const bottomLine=H-30;
+  for(const b of sv.bricks){
+    if(b.alive&&b.y+b.h>=bottomLine){
+      sv.alive=false;
+      const time=now-sv.startTime;
+      survTimes[survTurn]=time;
+      shakeAmt=12;SOUNDS[currentSkin].score(false);
+      survEndTurn(time);
+      return;
+    }
+  }
+
+  // Clean dead bricks that scrolled off
+  sv.bricks=sv.bricks.filter(b=>b.alive||b.y<H+50);
+
+  updateParticles();shakeAmt=Math.max(0,shakeAmt-.5);
+  survDraw(now);
+  animId=requestAnimationFrame(survUpdate);
+}
+
+function survActivatePU(type,now){
+  activePowerups=activePowerups.filter(p=>p.type!==type);
+  const sv=survState;
+  const notify=()=>{showPuPopup(survTurn,type);(PU_SOUNDS[type]||SOUNDS[currentSkin].powerup)();};
+
+  // Instant power-ups (no duration timer)
+  if(type==='decoy'){
+    for(let i=0;i<5;i++){
+      survDecoyBalls.push({x:sv.ball.x+sv.ball.size/2,y:sv.ball.y+sv.ball.size/2,
+        vx:(Math.random()-.5)*8,vy:-(Math.random()*5+2),dead:false});
+    }
+    notify();return;
+  }
+  if(type==='multiball'){
+    for(let i=0;i<2;i++){
+      survExtraBalls.push({x:sv.ball.x,y:sv.ball.y,
+        vx:sv.ball.vx*(i===0?.8:-.8)+((Math.random()-.5)*2),
+        vy:sv.ball.vy*(i===0?1:.9),size:sv.ball.size,alive:true});
+    }
+    notify();return;
+  }
+  if(type==='shrinkrow'){
+    // Find the lowest row of alive bricks and destroy them
+    let maxY=-Infinity;
+    for(const b of sv.bricks)if(b.alive&&b.y>maxY)maxY=b.y;
+    if(maxY>-Infinity){
+      for(const b of sv.bricks){
+        if(b.alive&&Math.abs(b.y-maxY)<4){
+          b.alive=false;sv.score++;
+          spawnBrickParticles(b.x+b.w/2,b.y+b.h/2,b.color);
+        }
+      }
+      shakeAmt=6;
+    }
+    notify();return;
+  }
+  if(type==='bomb'){
+    survBomb=true;notify();
+    activePowerups.push({type,side:survTurn,startTime:now,endTime:now+POWER_UPS[type].duration});
+    return;
+  }
+
+  // Duration-based power-ups
+  if(type==='shield'){shieldSide='bottom';}
+  if(type==='laser'){survLaser={active:true,endTime:now+POWER_UPS[type].duration};}
+  if(type==='freeze'){survFrozen=true;}
+  if(type==='survslowmo'){/* handled in update via hasAPU check */}
+  if(type==='magnetpaddle'){survMagnetHeld=null;/* state managed in update */}
+  if(type==='fireball'){survFireball=true;}
+
+  activePowerups.push({type,side:survTurn,startTime:now,endTime:now+POWER_UPS[type].duration});
+  notify();
+}
+
+function survClearPU(type){
+  if(type==='freeze')survFrozen=false;
+  if(type==='fireball')survFireball=false;
+  if(type==='laser')survLaser=null;
+  if(type==='bomb')survBomb=false;
+  if(type==='magnetpaddle'){survMagnetHeld=null;}
+  if(type==='shield')shieldSide=null;
+}
+
+function survDraw(now){
+  const sv=survState,sk=SKINS[currentSkin];
+  const sx=(Math.random()-.5)*shakeAmt,sy=(Math.random()-.5)*shakeAmt;
+  ctx.save();ctx.translate(sx,sy);
+
+  ctx.fillStyle=sk.bg;ctx.fillRect(-4,-4,W+8,H+8);
+
+  // Neon grid
+  if(sk.neonGlow){
+    ctx.save();ctx.strokeStyle=sk.midline;ctx.lineWidth=.5;ctx.globalAlpha=.12;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.globalAlpha=1;ctx.restore();
+  }
+
+  // Bottom danger line
+  const bottomLine=H-30;
+  ctx.save();ctx.strokeStyle='#f43f5e';ctx.lineWidth=1.5;ctx.globalAlpha=.3+.15*Math.sin(now/300);
+  ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(0,bottomLine);ctx.lineTo(W,bottomLine);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+
+  // Timer
+  const elapsed=(now-sv.startTime)/1000;
+  ctx.fillStyle=sk.fg;ctx.font='bold 28px monospace';ctx.textAlign='center';
+  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=10;
+  ctx.fillText(elapsed.toFixed(1)+'s',W/2,36);ctx.restore();
+
+  // Score
+  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.5;
+  ctx.fillText(`bricks: ${sv.score}`,W/2,52);ctx.globalAlpha=1;
+
+  // Player name
+  const name=survTurn==='left'?nameLeft:nameRight;
+  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;
+  ctx.fillText(name,W/2,H-6);ctx.globalAlpha=1;
+
+  // Draw bricks
+  const rounded=sk.paddleShape==='rounded';
+  const rad=3;
+  for(const b of sv.bricks){
+    if(!b.alive)continue;
+    ctx.fillStyle=b.color;
+    if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.fill();}
+    else ctx.fillRect(b.x,b.y,b.w,b.h);
+    // Crack lines for cracking bricks
+    if(b.btype==='cracking'&&b.hp<b.maxHp){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;
+      const cracks=b.maxHp-b.hp;
+      for(let c=0;c<cracks;c++){
+        const cx=b.x+b.w*(.2+c*.3),cy=b.y+b.h*.3;
+        ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+5,cy+b.h*.4);ctx.lineTo(cx-3,cy+b.h*.7);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // Gold border for power-up bricks
+    if(b.btype==='powerup'){
+      ctx.save();ctx.strokeStyle='#ffd700';ctx.lineWidth=1.5;ctx.globalAlpha=.6+.3*Math.sin(now/250);
+      if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.stroke();}
+      else ctx.strokeRect(b.x,b.y,b.w,b.h);
+      ctx.restore();
+    }
+    // Dark outline
+    ctx.save();ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;
+    if(rounded){ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,rad);ctx.stroke();}
+    else ctx.strokeRect(b.x,b.y,b.w,b.h);
+    ctx.restore();
+  }
+
+  // Draw paddle (horizontal)
+  const px=sv.paddle.x,py=H-24,pw=sv.paddle.w,ph=sv.paddle.h;
+  ctx.fillStyle=sk.fg;
+  if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(px,py,pw,ph,6);ctx.fill();}
+  else ctx.fillRect(px,py,pw,ph);
+  if(sk.neonGlow){
+    ctx.save();ctx.shadowColor=sk.fg;ctx.shadowBlur=14;
+    ctx.fillStyle=sk.fg;
+    if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(px,py,pw,ph,6);ctx.fill();}
+    else ctx.fillRect(px,py,pw,ph);
+    ctx.restore();
+  }
+
+  // Shield indicator — glowing line at bottom
+  if(shieldSide){
+    ctx.save();ctx.fillStyle=POWER_UPS.shield.color;ctx.globalAlpha=.5+.3*Math.sin(now/200);
+    ctx.fillRect(0,H-4,W,4);
+    ctx.shadowColor=POWER_UPS.shield.color;ctx.shadowBlur=12;ctx.fillRect(0,H-4,W,4);
+    ctx.restore();
+  }
+
+  // Freeze overlay on bricks
+  if(survFrozen){
+    ctx.save();ctx.globalAlpha=.15;ctx.fillStyle='#67e8f9';ctx.fillRect(0,0,W,H);ctx.restore();
+    // Icy sparkle on bricks
+    for(const b of sv.bricks){
+      if(!b.alive)continue;
+      if(Math.random()<.05){
+        ctx.save();ctx.fillStyle='#fff';ctx.globalAlpha=.6;
+        ctx.beginPath();ctx.arc(b.x+Math.random()*b.w,b.y+Math.random()*b.h,1.5,0,Math.PI*2);ctx.fill();ctx.restore();
+      }
+    }
+  }
+
+  // Laser beam from paddle
+  if(survLaser&&survLaser.active&&now<survLaser.endTime){
+    const lx=sv.paddle.x+sv.paddle.w/2;
+    const ly=py;
+    // Main beam
+    ctx.save();
+    const beamGrd=ctx.createLinearGradient(lx,0,lx,ly);
+    beamGrd.addColorStop(0,'rgba(0,180,255,0)');
+    beamGrd.addColorStop(.3,'rgba(0,180,255,.7)');
+    beamGrd.addColorStop(1,'rgba(100,220,255,.9)');
+    ctx.fillStyle=beamGrd;ctx.fillRect(lx-7,0,14,ly);
+    // Core bright line
+    ctx.fillStyle='rgba(200,240,255,.8)';ctx.fillRect(lx-2,0,4,ly);
+    // Glow
+    ctx.shadowColor='#00bfff';ctx.shadowBlur=20;
+    ctx.fillStyle='rgba(0,180,255,.4)';ctx.fillRect(lx-10,0,20,ly);
+    // Smoke at base
+    for(let i=0;i<3;i++){
+      const smx=lx+(Math.random()-.5)*20,smy=ly-Math.random()*15;
+      ctx.globalAlpha=.2+Math.random()*.2;ctx.fillStyle='rgba(180,220,255,.5)';
+      ctx.beginPath();ctx.arc(smx,smy,3+Math.random()*4,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Draw ball
+  const BS=sv.ball.size||10;
+  const bx=sv.ball.x,by=sv.ball.y;
+
+  // Fireball effect — flame trail behind ball
+  if(survFireball){
+    ctx.save();
+    for(let i=0;i<4;i++){
+      const fx=bx+BS/2+(Math.random()-.5)*BS*1.2;
+      const fy=by+BS/2+(Math.random()-.5)*BS*1.2;
+      const fr=BS/2+Math.random()*BS*.6;
+      const grd=ctx.createRadialGradient(fx,fy,0,fx,fy,fr);
+      grd.addColorStop(0,'rgba(255,200,50,.6)');
+      grd.addColorStop(.4,'rgba(255,100,0,.3)');
+      grd.addColorStop(1,'rgba(255,50,0,0)');
+      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(fx,fy,fr,0,Math.PI*2);ctx.fill();
+    }
+    // Hot core
+    ctx.shadowColor='#ff6600';ctx.shadowBlur=15;
+    ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(bx+BS/2,by+BS/2,BS/2,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }else{
+    drawBall(bx,by,BS,sk,false,false);
+  }
+
+  // Bomb indicator on ball
+  if(survBomb){
+    ctx.save();ctx.strokeStyle='#ff4500';ctx.lineWidth=2;ctx.globalAlpha=.6+.4*Math.sin(now/150);
+    ctx.beginPath();ctx.arc(bx+BS/2,by+BS/2,BS/2+4,0,Math.PI*2);ctx.stroke();
+    ctx.font='bold 8px monospace';ctx.fillStyle='#ff4500';ctx.textAlign='center';ctx.globalAlpha=.8;
+    ctx.fillText('💣',bx+BS/2,by-4);
+    ctx.restore();
+  }
+
+  // Magnet held indicator
+  if(survMagnetHeld){
+    ctx.save();ctx.strokeStyle='#f472b6';ctx.lineWidth=1.5;ctx.globalAlpha=.5+.3*Math.sin(now/200);
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(bx+BS/2,by);ctx.lineTo(bx+BS/2,by-30);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='bold 8px monospace';ctx.fillStyle='#f472b6';ctx.textAlign='center';
+    ctx.fillText('SPACE to launch',bx+BS/2,by-35);
+    ctx.restore();
+  }
+
+  // Draw multi-ball extra balls
+  for(const eb of survExtraBalls){
+    if(!eb.alive)continue;
+    if(survFireball){
+      ctx.save();ctx.shadowColor='#ff6600';ctx.shadowBlur=10;
+      ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(eb.x+BS/2,eb.y+BS/2,BS/2,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }else{
+      drawBall(eb.x,eb.y,BS,sk,false,false);
+    }
+  }
+
+  // Draw decoy balls
+  for(const db of survDecoyBalls){
+    ctx.save();ctx.globalAlpha=.6;ctx.fillStyle=sk.accent;
+    ctx.beginPath();ctx.arc(db.x,db.y,4,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+
+  // Draw field power-ups
+  drawFieldPowerup(now);
+
+  // Draw particles
+  drawParticles();
+
+  // Active power-up HUD
+  drawActivePuHud(now);
+
+  // Mode label
+  ctx.save();ctx.font='bold 9px monospace';ctx.fillStyle='#22c55e';
+  ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText('SURVIVAL',6,14);
+  ctx.globalAlpha=1;ctx.restore();
+
+  // Pause overlay
+  if(paused){
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=sk.fg;ctx.font='bold 34px monospace';ctx.textAlign='center';ctx.fillText('PAUSED',W/2,H/2-10);
+    ctx.font='13px monospace';ctx.fillStyle=sk.accent;ctx.fillText('press P to resume',W/2,H/2+22);
+  }
+
+  ctx.restore();
+}
+
+function survEndTurn(time){
+  cancelAnimationFrame(animId);
+  const sk=SKINS[currentSkin];
+  const name=survTurn==='left'?nameLeft:nameRight;
+  recordSurvivalTime(name,time);
+
+  if(mode==='2p'&&survTurn==='left'){
+    survTurn='right';
+    resizeCanvas(700,450);
+    setTimeout(()=>survShowTurnScreen(),1500);
+    return;
+  }
+  if(mode==='ai'&&survTurn==='left'){
+    survTurn='right';
+    setTimeout(()=>{
+      survShowTurnScreen();
+      setTimeout(()=>survStartTurn(),1500);
+    },1500);
+    return;
+  }
+
+  // Both players done — show results
+  resizeCanvas(700,450);
+  setTimeout(()=>{
+    const t1=survTimes.left||0,t2=survTimes.right||0;
+    const winner=t1>=t2?'left':'right';
+    const wname=winner==='left'?nameLeft:nameRight;
+    ['pw','game-over'].forEach(id=>{
+      const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
+    });
+    document.body.style.background=sk.menuBg;
+    document.getElementById('wtxt').textContent=`${wname} wins!`;
+    document.getElementById('wtxt').style.color=sk.menuFg;
+    document.getElementById('wscr').textContent=`${nameLeft}: ${(t1/1000).toFixed(1)}s — ${nameRight}: ${(t2/1000).toFixed(1)}s`;
+    document.getElementById('wscr').style.color=sk.menuFg;
+    document.getElementById('wmatch').textContent=`${wname} survived longer!`;
+    document.getElementById('wmatch').style.color=sk.menuFg;
+    ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
+    document.getElementById('rabtn').textContent='Play again';
+    document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
+    document.getElementById('game-ui').style.display='none';
+    document.getElementById('surv-turn').style.display='none';
+    document.getElementById('game-over').style.display='flex';
+    window.scrollTo(0,0);
+    recordWin(wname);recordLoss(wname===nameLeft?nameRight:nameLeft);
+  },1500);
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // INTRO ANIMATION
 // ═══════════════════════════════════════════════════════════════════
 function runIntro(){
-  const title=document.getElementById('menu-title');
-  requestAnimationFrame(()=>{
-    title.style.opacity='1';title.style.transform='translateY(0)';
-  });
+  // Title animation handled by CSS @keyframes titleBounce
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// TEST MODE
+// ═══════════════════════════════════════════════════════════════════
+let testPanelOpen=false;
+function toggleTestPanel(){
+  testPanelOpen=!testPanelOpen;
+  document.getElementById('test-panel').style.display=testPanelOpen?'block':'none';
+}
+function buildTestButtons(){
+  const cont=document.getElementById('test-pu-btns');
+  const contR=document.getElementById('test-pu-btns-r');
+  for(const key of PU_KEYS){
+    const pu=POWER_UPS[key];
+    const btnL=document.createElement('button');btnL.className='test-btn';
+    btnL.style.borderLeft=`3px solid ${pu.color}`;
+    btnL.textContent=`${pu.name}`;
+    btnL.onclick=()=>{if(state)activatePowerup(key,'left',performance.now());};
+    cont.appendChild(btnL);
+    const btnR=document.createElement('button');btnR.className='test-btn';
+    btnR.style.borderLeft=`3px solid ${pu.color}`;
+    btnR.textContent=`${pu.name}`;
+    btnR.onclick=()=>{if(state)activatePowerup(key,'right',performance.now());};
+    contR.appendChild(btnR);
+  }
+}
+function testClearPU(){clearAllPowerups();fieldPowerups=[];}
+function testScoreLeft(){if(state)state.left.score++;}
+function testScoreRight(){if(state)state.right.score++;}
+function testSpawnFieldPU(){spawnFieldPowerup(performance.now());}
+function testResetBall(){if(state){state.ball.x=W/2;state.ball.y=H/2;state.ball.vx=BASE_SPEED;state.ball.vy=1;}}
+function testMaxSpeed(){if(state){const spd=12;const ang=Math.atan2(state.ball.vy,state.ball.vx);state.ball.vx=Math.cos(ang)*spd;state.ball.vy=Math.sin(ang)*spd;}}
+function testSlowSpeed(){if(state){const spd=2;const ang=Math.atan2(state.ball.vy,state.ball.vx);state.ball.vx=Math.cos(ang)*spd;state.ball.vy=Math.sin(ang)*spd;}}
+buildTestButtons();
 
 // ═══════════════════════════════════════════════════════════════════
 // BOOT
