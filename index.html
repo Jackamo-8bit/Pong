@@ -1301,7 +1301,7 @@ function drawBricks(){
 // INIT / MATCH FLOW
 // ═══════════════════════════════════════════════════════════════════
 function initGameState(){
-  particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];leadPreSpeed=null;rallyHits=0;prevRallyHits=0;aiError=0;
+  particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];leadPreSpeed=null;rallyHits=0;prevRallyHits=0;aiError=0;aiErrorLeft=0;aiErrorRight=0;
   shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;blackholePos=null;
   bricks=[];
   if(gameMode==='bricks')buildBricks();
@@ -1313,9 +1313,11 @@ function startMatch(m){
   if(gameMode==='survival'){survStartMatch(m);return;}
   if(W!==700||H!==450)resizeCanvas(700,450);
   mode=m;lastMode=m;
-  nameLeft =document.getElementById('name-left').value.trim()||'Player 1';
-  nameRight=document.getElementById('name-right').value.trim()||'Player 2';
-  if(m==='ai')nameRight='AI';
+  if(!tourney){
+    nameLeft =document.getElementById('name-left').value.trim()||'Player 1';
+    nameRight=document.getElementById('name-right').value.trim()||'Player 2';
+    if(m==='ai')nameRight='AI';
+  }
   matchSets={left:0,right:0};currentSet=0;
   brickPoints={left:0,right:0};lastBrickToucher=null;
   startSet();
@@ -1377,7 +1379,7 @@ function resetBall(loser){
 function showMenu(){
   if(animId)cancelAnimationFrame(animId);
   if(W!==700||H!==450)resizeCanvas(700,450);
-  ['menu','game-over','match-over','surv-turn'].forEach(id=>document.getElementById(id).style.display=id==='menu'?'flex':'none');
+  ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner'].forEach(id=>document.getElementById(id).style.display=id==='menu'?'flex':'none');
   document.getElementById('game-ui').style.display='none';
   document.getElementById('pu-popup').classList.remove('show');
   paused=false;applyMenuSkin();buildSkinGrid();buildLeaderboard();
@@ -1562,20 +1564,31 @@ function handleTouch(e){
 // ═══════════════════════════════════════════════════════════════════
 // AI
 // ═══════════════════════════════════════════════════════════════════
-function moveAI(paddle,ball){
-  const ph=getPH('right');
+let aiErrorLeft=0,aiErrorRight=0;
+function moveAI(paddle,ball,side){
+  side=side||'right';
+  const ph=getPH(side);
   let spd=AI_SPEED[aiDiff],maxErr=AI_ERROR[aiDiff];
   // Rubber-banding: AI adapts when score gap is large
   if(state){
-    const gap=state.left.score-state.right.score; // positive = AI losing
-    if(gap>=3){spd*=1.15;maxErr*=0.6;} // AI losing badly → boost
+    const myScore=state[side].score,oppScore=state[side==='left'?'right':'left'].score;
+    const gap=oppScore-myScore; // positive = this AI losing
+    if(gap>=3){spd*=1.15;maxErr*=0.6;}
     else if(gap>=2){spd*=1.07;maxErr*=0.8;}
-    else if(gap<=-3){spd*=0.85;maxErr*=1.4;} // AI winning easily → nerf
+    else if(gap<=-3){spd*=0.85;maxErr*=1.4;}
     else if(gap<=-2){spd*=0.93;maxErr*=1.2;}
   }
-  aiError+=(Math.random()-.5)*4;
-  aiError=Math.max(-maxErr,Math.min(maxErr,aiError));
-  const target=ball.y+aiError,c=paddle.y+ph/2,diff=target-c;
+  // Per-side error tracking so two AIs don't share drift
+  if(side==='left'){
+    aiErrorLeft+=(Math.random()-.5)*4;
+    aiErrorLeft=Math.max(-maxErr,Math.min(maxErr,aiErrorLeft));
+    var err=aiErrorLeft;
+  }else{
+    aiErrorRight+=(Math.random()-.5)*4;
+    aiErrorRight=Math.max(-maxErr,Math.min(maxErr,aiErrorRight));
+    var err=aiErrorRight;
+  }
+  const target=ball.y+err,c=paddle.y+ph/2,diff=target-c;
   if(Math.abs(diff)>spd)paddle.y+=diff>0?spd:-spd;
   paddle.y=Math.max(0,Math.min(H-ph,paddle.y));
 }
@@ -1794,13 +1807,22 @@ function movePaddles(s,SPD){
   const invertLeft=invertPU&&invertPU.side!=='left';
   const invertRight=invertPU&&invertPU.side!=='right';
   const lUp=invertLeft?-1:1, rUp=invertRight?-1:1;
-  if(mode==='2p'){
-    if(keys['w']||keys['W'])s.left.y-=leftSPD*lUp;if(keys['s']||keys['S'])s.left.y+=leftSPD*lUp;
-    if(keys['ArrowUp'])s.right.y-=rightSPD*rUp;if(keys['ArrowDown'])s.right.y+=rightSPD*rUp;
-  }else{
+  const aiLeft=tourney?tourneyAI.left:false;
+  const aiRight=tourney?tourneyAI.right:(mode==='ai');
+  if(aiLeft&&aiRight){
+    // Both AI — no keyboard input
+    if(!serving){moveAI(s.left,s.ball,'left');moveAI(s.right,s.ball,'right');}
+  }else if(aiRight){
     if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=leftSPD*lUp;
     if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
-    if(!serving)moveAI(s.right,s.ball);
+    if(!serving)moveAI(s.right,s.ball,'right');
+  }else if(aiLeft){
+    if(keys['w']||keys['W']||keys['ArrowUp'])s.right.y-=rightSPD*rUp;
+    if(keys['s']||keys['S']||keys['ArrowDown'])s.right.y+=rightSPD*rUp;
+    if(!serving)moveAI(s.left,s.ball,'left');
+  }else{
+    if(keys['w']||keys['W'])s.left.y-=leftSPD*lUp;if(keys['s']||keys['S'])s.left.y+=leftSPD*lUp;
+    if(keys['ArrowUp'])s.right.y-=rightSPD*rUp;if(keys['ArrowDown'])s.right.y+=rightSPD*rUp;
   }
   if(touchY.left===null)s.left.y=Math.max(0,Math.min(H-leftPH,s.left.y));
   if(touchY.right===null)s.right.y=Math.max(0,Math.min(H-rightPH,s.right.y));
@@ -1990,7 +2012,8 @@ function drawServe(now){
     ctx.font='bold 80px monospace';ctx.textAlign='center';ctx.fillStyle=sk.fg;
     ctx.globalAlpha=.9;ctx.fillText(countdown,W/2,H/2+28);ctx.globalAlpha=1;
   }else{
-    const humanServes=!(mode==='ai'&&serveSide==='right');
+    const sideIsAI=(tourney&&tourneyAI[serveSide])||(mode==='ai'&&serveSide==='right');
+    const humanServes=!sideIsAI;
     if(humanServes)drawServeAim(now,serveSide);
 
     const serveName=playerName(serveSide);
@@ -2003,7 +2026,7 @@ function drawServe(now){
       ctx.fillText(isMobile?'touch to aim \u00b7 release to serve':'W/S or \u2191/\u2193 to aim \u00b7 space to serve',W/2,H/2+14);
     }
     ctx.globalAlpha=1;
-    if(mode==='ai'&&serveSide==='right'&&now-countdownT>800)launchBall(serveSide);
+    if(sideIsAI&&now-countdownT>800)launchBall(serveSide);
   }
 
   if(matchFormat>1){
@@ -3052,6 +3075,7 @@ function survEndTurn(time){
 // TOURNAMENT MODE
 // ═══════════════════════════════════════════════════════════════════
 let tourney=null; // {players:[], matches:[], currentMatch:int, rounds:int}
+let tourneyAI={left:false,right:false}; // which sides are AI-controlled in current tournament match
 const TOURNEY_SCREENS=['tourney-setup','tourney-bracket','tourney-winner'];
 
 function hideAllTourneyScreens(){TOURNEY_SCREENS.forEach(id=>document.getElementById(id).style.display='none');}
@@ -3071,9 +3095,10 @@ function showTournamentSetup(){
   document.querySelectorAll('#tourney-setup .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   // Seed with existing names if empty
   if(!tourney||!tourney.players||tourney.players.length<2){
+    usedBotNames=[];
     tourney={players:[
       {name:'Player 1',isAI:false},{name:'Player 2',isAI:false},
-      {name:'Player 3',isAI:false},{name:'AI',isAI:true}
+      {name:'Player 3',isAI:false},{name:randomBotName(),isAI:true}
     ],matches:[],currentMatch:0,rounds:0};
   }
   tourneyRenderPlayers();
@@ -3084,7 +3109,7 @@ function tourneyRenderPlayers(){
   cont.innerHTML='';
   tourney.players.forEach((p,i)=>{
     const row=document.createElement('div');row.className='tp-row';
-    row.innerHTML=`<input class="tp-name" maxlength="10" value="${p.name}" onchange="tourney.players[${i}].name=this.value">`
+    row.innerHTML=`<input class="tp-name" maxlength="12" value="${p.name}" onchange="tourney.players[${i}].name=this.value">`
       +(p.isAI?`<span class="tp-ai-tag">AI</span>`:'')
       +`<button class="tp-rm" onclick="tourneyRemovePlayer(${i})">×</button>`;
     cont.appendChild(row);
@@ -3100,10 +3125,28 @@ function tourneyRenderPlayers(){
     :`${n} players · ${rounds} round${rounds>1?'s':''}`+(byes>0?` · ${byes} bye${byes>1?'s':''}`:'')+` · ${gameMode} mode`;
 }
 
+const BOT_NAMES=[
+  'Bot Terry','Bot Wogan','Sir Pongs','McPaddle','DJ Bounce','The Wall',
+  'Ping Lord','Paddle Me','Chad Bot','Botto','Net Ninja','Pixel Pete',
+  'Beep Boop','Rallyton','Smashy','Wallbanger','Pongzilla','Ace Volley',
+  'Spinmaster','Dr Lob','Netflicks','Bouncebot','Paddrick','Servo',
+  'Turbo Nan','Big Dave','Tiny Rick','Mega Mum','El Poncho','Zig Zag',
+  'Barry Bot','Jan 6000','The Hoff','RoboPong','Old Greg','Sue-perbot',
+  'Captain Bat','Keith','Alan','Jeff 3000','Bev','Pat Sharp',
+  'The Stig','Nbot','Unit 42','Mx Smash','Prof Lob','Archie',
+  'Clive','Delia','Pongtastic','Sir Hits','Bonkbot','Whackamole'
+];
+let usedBotNames=[];
+function randomBotName(){
+  const avail=BOT_NAMES.filter(n=>!usedBotNames.includes(n)&&!(tourney&&tourney.players.some(p=>p.name===n)));
+  const pick=avail.length?avail[Math.floor(Math.random()*avail.length)]:('Bot '+(tourney?tourney.players.length+1:1));
+  usedBotNames.push(pick);
+  return pick;
+}
 function tourneyAddPlayer(isAI){
   if(tourney.players.length>=8)return;
   const num=tourney.players.length+1;
-  tourney.players.push({name:isAI?`AI ${num}`:`Player ${num}`,isAI});
+  tourney.players.push({name:isAI?randomBotName():`Player ${num}`,isAI});
   tourneyRenderPlayers();
 }
 function tourneyRemovePlayer(i){
@@ -3191,6 +3234,9 @@ function showTourneyBracket(){
   });
   document.body.style.background=sk.menuBg;
   document.getElementById('tourney-bracket').style.display='flex';
+  // Apply skin colors to buttons
+  document.querySelectorAll('#tourney-bracket .btn-o').forEach(b=>{b.style.color=sk.menuFg;b.style.borderColor=sk.menuFg;});
+  document.querySelectorAll('#tourney-bracket .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   tourneyRenderBracket('tourney-bracket-grid');
   // Find next match
   const next=tourney.matches.find(m=>!m.winner&&m.p1&&m.p2);
@@ -3245,22 +3291,20 @@ function tourneyPlayNext(){
   const match=tourney.matches.find(m=>!m.winner&&m.p1&&m.p2);
   if(!match)return;
   tourney.currentMatch=tourney.matches.indexOf(match);
-  // Set up names for the match
+  // Set up names and AI flags for the match
   nameLeft=match.p1.name;nameRight=match.p2.name;
-  document.getElementById('name-left').value=nameLeft;
-  document.getElementById('name-right').value=nameRight;
-  // Determine mode: both AI, one AI, or 2 humans
-  const bothAI=match.p1.isAI&&match.p2.isAI;
-  const oneAI=match.p1.isAI||match.p2.isAI;
-  let matchMode;
-  if(bothAI)matchMode='ai'; // Both AI — we'll auto-play
-  else if(oneAI)matchMode='ai';
-  else matchMode='2p';
+  tourneyAI={left:!!match.p1.isAI,right:!!match.p2.isAI};
+  match._swapped=false;
   // If p1 is AI and p2 is human, swap so human is always on left
   if(match.p1.isAI&&!match.p2.isAI){
     nameLeft=match.p2.name;nameRight=match.p1.name;
+    tourneyAI={left:false,right:true};
     match._swapped=true;
-  }else{match._swapped=false;}
+  }
+  document.getElementById('name-left').value=nameLeft;
+  document.getElementById('name-right').value=nameRight;
+  // Use '2p' mode — AI control is handled per-side via tourneyAI
+  const matchMode=tourneyAI.left&&tourneyAI.right?'ai':'2p';
   hideAllTourneyScreens();
   document.getElementById('tourney-bracket').style.display='none';
   if(gameMode==='survival'){
@@ -3293,7 +3337,7 @@ function tourneyOnMatchEnd(winnerSide){
 }
 
 function tourneyCancel(){
-  tourney=null;showMenu();
+  tourney=null;tourneyAI={left:false,right:false};showMenu();
 }
 
 // --- WINNER ---
@@ -3314,6 +3358,8 @@ function showTourneyWinner(){
   document.getElementById('tourney-win-stats').textContent=`${tourney.players.length} players · ${matchesWon} match${matchesWon>1?'es':''} won · ${gameMode} mode`;
   document.getElementById('tourney-win-stats').style.color=sk.menuFg;
   document.getElementById('tourney-winner').style.display='flex';
+  // Apply skin colors to buttons
+  document.querySelectorAll('#tourney-winner .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   tourneyRenderBracket('tourney-bracket-final');
   // Play win sound
   SOUNDS[currentSkin].gameWin(true);
