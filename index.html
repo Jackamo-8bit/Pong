@@ -359,12 +359,38 @@ canvas{display:block;}
 </div>
 
 </div><!-- #pw -->
+
+<!-- ── LANDSCAPE PROMPT (mobile only, during gameplay) ── -->
+<div id="rotate-prompt" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:monospace;text-align:center;padding:24px;">
+  <div style="font-size:48px;animation:rotateNudge 1.5s ease-in-out infinite;">📱</div>
+  <div style="font-size:16px;letter-spacing:2px;">ROTATE YOUR PHONE</div>
+  <div style="font-size:11px;opacity:.5;max-width:260px;">landscape mode recommended for the best gameplay experience</div>
+  <button class="btn" onclick="dismissRotatePrompt()" style="margin-top:8px;font-size:11px;padding:8px 20px;">PLAY IN PORTRAIT ANYWAY</button>
+</div>
+<style>
+@keyframes rotateNudge{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-30deg)}75%{transform:rotate(90deg)}}
+</style>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // AUDIO
 // ═══════════════════════════════════════════════════════════════════
-let audioCtx=null, muted=false, masterVolume=0.8;
+let audioCtx=null, muted=false, masterVolume=0.8, audioUnlocked=false;
 function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+// Mobile audio unlock — iOS/Chrome require AudioContext.resume() on a user gesture
+function unlockAudio(){
+  if(audioUnlocked)return;
+  const ac=getAudio();
+  if(ac.state==='suspended'){
+    ac.resume().then(()=>{audioUnlocked=true;});
+  }else{audioUnlocked=true;}
+  // Also play a silent buffer to fully unlock on iOS WebKit
+  const buf=ac.createBuffer(1,1,ac.sampleRate);
+  const src=ac.createBufferSource();src.buffer=buf;src.connect(ac.destination);src.start(0);
+}
+['touchstart','touchend','click','keydown'].forEach(evt=>{
+  document.addEventListener(evt,unlockAudio,{once:false,passive:true});
+});
 
 // Master gain node for volume control
 let masterGain=null;
@@ -787,6 +813,36 @@ function fitCanvasToViewport(){
 }
 window.addEventListener('resize',fitCanvasToViewport);
 window.addEventListener('orientationchange',()=>setTimeout(fitCanvasToViewport,200));
+
+// ═══════════════════════════════════════════════════════════════════
+// LANDSCAPE PROMPT (mobile only)
+// ═══════════════════════════════════════════════════════════════════
+let rotateDismissed=false, inGameplay=false;
+const isMobileDevice=('ontouchstart'in window)&&window.innerWidth<1024;
+
+function isPortrait(){return window.innerHeight>window.innerWidth;}
+
+function checkRotatePrompt(){
+  if(!isMobileDevice||rotateDismissed||!inGameplay){
+    document.getElementById('rotate-prompt').style.display='none';return;
+  }
+  document.getElementById('rotate-prompt').style.display=isPortrait()?'flex':'none';
+}
+
+function dismissRotatePrompt(){
+  rotateDismissed=true;
+  document.getElementById('rotate-prompt').style.display='none';
+}
+
+function enterGameplay(){
+  inGameplay=true;rotateDismissed=false;checkRotatePrompt();
+}
+function exitGameplay(){
+  inGameplay=false;checkRotatePrompt();
+}
+
+window.addEventListener('resize',checkRotatePrompt);
+window.addEventListener('orientationchange',()=>setTimeout(checkRotatePrompt,250));
 
 const AI_SPEED={easy:2.2,medium:3.8,hard:5.6};
 const AI_ERROR={easy:60,medium:22,hard:4};
@@ -1340,6 +1396,7 @@ function startSet(){
   if(animId)cancelAnimationFrame(animId);
   beginServe('left');
   if(!paused)animId=requestAnimationFrame(update);
+  enterGameplay();
 }
 
 function beginServe(side){
@@ -1383,6 +1440,7 @@ function showMenu(){
   document.getElementById('game-ui').style.display='none';
   document.getElementById('pu-popup').classList.remove('show');
   paused=false;applyMenuSkin();buildSkinGrid();buildLeaderboard();
+  exitGameplay();
 }
 
 function togglePause(){
@@ -1397,6 +1455,7 @@ function togglePause(){
 function endSet(winner){
   cancelAnimationFrame(animId);
   document.getElementById('pu-popup').classList.remove('show');
+  exitGameplay();
   const sk=SKINS[currentSkin];
   matchSets[winner]++;
   const setsNeeded=Math.ceil(matchFormat/2);
@@ -2356,6 +2415,7 @@ function survStartTurn(){
   keys={};
   if(animId)cancelAnimationFrame(animId);
   animId=requestAnimationFrame(survUpdate);
+  enterGameplay();
 }
 
 function survUpdate(){
