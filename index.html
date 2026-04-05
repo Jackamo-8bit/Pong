@@ -225,9 +225,9 @@ canvas{display:block;}
   <hr class="menu-hr">
   <div class="sub sub-cta" style="margin-top:2px;">choose mode</div>
   <div class="row">
-    <button class="btn" id="btn2p" onclick="startMatch('2p')">2 Players</button>
-    <button class="btn" id="btnai" onclick="startMatch('ai')">vs AI</button>
-    <button class="btn" id="btntourney" onclick="showTournamentSetup()">Tournament</button>
+    <button class="btn" id="btn2p" onclick="startMatch('2p')" aria-label="Start 2 player game">2 Players</button>
+    <button class="btn" id="btnai" onclick="startMatch('ai')" aria-label="Start game versus AI">vs AI</button>
+    <button class="btn" id="btntourney" onclick="showTournamentSetup()" aria-label="Start tournament">Tournament</button>
   </div>
   <div class="hint">W/S = left &nbsp;|&nbsp; arrows = right &nbsp;|&nbsp; P = pause<br>aim with W/S or ↑/↓ &nbsp;|&nbsp; space = serve</div>
 
@@ -258,14 +258,15 @@ canvas{display:block;}
   </div>
   <div id="bar">
     <span id="mlabel"></span>
-    <button class="btn-o" id="pbtn"    onclick="togglePause()">Pause</button>
+    <button class="btn-o" id="pbtn"    onclick="togglePause()" aria-label="Pause game">Pause</button>
     <div class="vol-wrap">
-      <button class="btn-o" id="mutebtn" onclick="toggleMute()">🔊</button>
-      <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+      <button class="btn-o" id="mutebtn" onclick="toggleMute()" aria-label="Toggle mute">🔊</button>
+      <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)" aria-label="Volume">
     </div>
-    <button class="btn-o" onclick="showMenu()">Menu</button>
+    <button class="btn-o" onclick="showMenu()" aria-label="Return to menu">Menu</button>
   </div>
   <div id="kb-legend">W/S left · ↑/↓ right · P pause · +/− volume · space serve · aim W/S ↑↓ · T test panel</div>
+  <div id="score-live" aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);"></div>
 </div>
 <!-- ── TEST MODE PANEL ── -->
 <div id="test-panel" style="display:none;position:fixed;top:0;right:0;width:220px;max-height:100vh;overflow-y:auto;background:rgba(0,0,0,.92);color:#ccc;font-family:monospace;font-size:11px;padding:10px;z-index:200;border-left:2px solid #444;">
@@ -881,6 +882,10 @@ function rallySpeedBonus(hits){
 }
 
 let mode,animId,paused=false,state,particles=[];
+const prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TARGET_FRAME_MS=1000/60; // 16.667ms — normalize dt so 1.0 = 60fps
+let lastFrameTime=0;
+let _drawDt=1; // passed to draw functions for visual decay
 let chaosHue=0,keys={};
 let serving=false,serveSide='left',countdown=0,countdownT=0;
 let shakeAmt=0;
@@ -982,6 +987,7 @@ function applyGameSkin(){
 // PARTICLES
 // ═══════════════════════════════════════════════════════════════════
 function spawnParticles(x,y,dir,count){
+  if(prefersReducedMotion)return;
   count=count||(SKINS[currentSkin].chaos?18+activePowerups.length*4:10);
   for(let i=0;i<count;i++){
     const spread=SKINS[currentSkin].chaos?Math.PI:Math.PI*.8;
@@ -990,17 +996,21 @@ function spawnParticles(x,y,dir,count){
   }
 }
 function spawnPuParticles(x,y){
+  if(prefersReducedMotion)return;
   for(let i=0;i<20;i++){
     const angle=(Math.PI*2/20)*i,spd=Math.random()*3+1;
     particles.push({x,y,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1,decay:Math.random()*.03+.02,size:Math.random()*4+2,hue:Math.random()*360,isPu:true});
   }
 }
-function updateParticles(){
+function updateParticles(dt){
+  dt=dt||1;
+  // Hard cap to prevent memory growth in long sessions
+  if(particles.length>500)particles.splice(0,particles.length-500);
   for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];p.x+=p.vx;p.y+=p.vy;
-    p.vy+=p.isDebris?.12:.05; // debris falls faster
-    if(p.isDebris&&p.rot!=null)p.rot+=p.rotSpd;
-    p.life-=p.decay;
+    const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;
+    p.vy+=(p.isDebris?.12:.05)*dt; // debris falls faster
+    if(p.isDebris&&p.rot!=null)p.rot+=p.rotSpd*dt;
+    p.life-=p.decay*dt;
     if(p.life<=0)particles.splice(i,1);
   }
 }
@@ -1057,6 +1067,10 @@ function activatePowerup(type,side,now){
   if(hasAPU('decoy'))decoyBalls=[];
   // In chaos mode, stack power-ups; in normal mode, clear old one first
   if(gameMode!=='chaos'&&activePowerups.length)clearAllPowerups();
+  // In chaos mode, cap active power-ups to 3 — remove oldest if over limit
+  if(gameMode==='chaos'&&activePowerups.length>=3){
+    clearSinglePU(activePowerups[0]);activePowerups.shift();
+  }
   // Remove duplicate type if re-activating same power-up
   activePowerups=activePowerups.filter(p=>p.type!==type);
   // Black hole is instant — no duration-based active state
@@ -1418,8 +1432,9 @@ function startSet(){
   const setInfo=matchFormat>1?` · Set ${currentSet}`:'';
   const modeTag=gameMode!=='classic'?` [${gameMode.toUpperCase()}]`:'';
   document.getElementById('mlabel').textContent=`${nameLeft} vs ${nameRight}${setInfo}${modeTag}`;
+  document.getElementById('kb-legend').textContent='W/S left · \u2191/\u2193 right · P pause · +/\u2212 volume · space serve · aim W/S \u2191\u2193 · T test panel';
   applyGameSkin();
-  state=initGameState();keys={};
+  state=initGameState();keys={};lastFrameTime=0;
   if(animId)cancelAnimationFrame(animId);
   beginServe('left');
   if(!paused)animId=requestAnimationFrame(update);
@@ -1474,7 +1489,7 @@ function showMenu(){
 function togglePause(){
   paused=!paused;
   document.getElementById('pbtn').textContent=paused?'Resume':'Pause';
-  if(!paused)animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);
+  if(!paused){lastFrameTime=0;animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1652,8 +1667,22 @@ function handleTouch(e){
 // AI
 // ═══════════════════════════════════════════════════════════════════
 let aiErrorLeft=0,aiErrorRight=0;
-function moveAI(paddle,ball,side){
-  side=side||'right';
+// Predict where the ball will arrive at a given x, accounting for wall bounces
+function predictBallY(ball,targetX){
+  let bx=ball.x,by=ball.y,vx=ball.vx,vy=ball.vy;
+  if(vx===0)return by;
+  // Only predict if ball is heading toward targetX
+  if((targetX>bx&&vx<0)||(targetX<bx&&vx>0))return by;
+  const steps=Math.abs((targetX-bx)/vx);
+  let py=by+vy*steps;
+  // Simulate wall bounces
+  while(py<0||py>H){
+    if(py<0){py=-py;} else if(py>H){py=2*H-py;}
+  }
+  return py;
+}
+function moveAI(paddle,ball,side,dt){
+  side=side||'right';dt=dt||1;
   const ph=getPH(side);
   let spd=AI_SPEED[aiDiff],maxErr=AI_ERROR[aiDiff];
   // Rubber-banding: AI adapts when score gap is large
@@ -1667,24 +1696,36 @@ function moveAI(paddle,ball,side){
   }
   // Per-side error tracking so two AIs don't share drift
   if(side==='left'){
-    aiErrorLeft+=(Math.random()-.5)*4;
+    aiErrorLeft+=(Math.random()-.5)*4*dt;
     aiErrorLeft=Math.max(-maxErr,Math.min(maxErr,aiErrorLeft));
     var err=aiErrorLeft;
   }else{
-    aiErrorRight+=(Math.random()-.5)*4;
+    aiErrorRight+=(Math.random()-.5)*4*dt;
     aiErrorRight=Math.max(-maxErr,Math.min(maxErr,aiErrorRight));
     var err=aiErrorRight;
   }
-  const target=ball.y+err,c=paddle.y+ph/2,diff=target-c;
-  if(Math.abs(diff)>spd)paddle.y+=diff>0?spd:-spd;
+  // Predict trajectory when ball is heading toward this paddle; otherwise drift to center
+  const heading=(side==='left'&&ball.vx<0)||(side==='right'&&ball.vx>0);
+  let targetY;
+  if(heading){
+    const padX=side==='left'?24+PW:W-24-PW;
+    targetY=predictBallY(ball,padX)+err;
+  }else{
+    // Ball heading away — drift toward center with some error
+    targetY=H/2+err*0.5;
+  }
+  const c=paddle.y+ph/2,diff=targetY-c;
+  const step=spd*dt;
+  if(Math.abs(diff)>step)paddle.y+=diff>0?step:-step;
   paddle.y=Math.max(0,Math.min(H-ph,paddle.y));
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // DECOY BALLS
 // ═══════════════════════════════════════════════════════════════════
-function updateDecoyBall(db){
-  db.x+=db.vx;db.y+=db.vy;
+function updateDecoyBall(db,dt){
+  dt=dt||1;
+  db.x+=db.vx*dt;db.y+=db.vy*dt;
   if(db.y<=0){db.y=0;db.vy*=-1;}if(db.y+10>=H){db.y=H-10;db.vy*=-1;}
   const LP=24,RP=W-24-PW;
   if(db.vx<0&&db.x<=LP+PW&&db.x>=LP-2&&db.y+10>=state.left.y&&db.y<=state.left.y+PH){db.x=LP+PW;db.vx=Math.abs(db.vx);}
@@ -1698,6 +1739,11 @@ function updateDecoyBall(db){
 function update(){
   if(paused)return;
   const now=performance.now();
+  if(!lastFrameTime)lastFrameTime=now;
+  let dt=(now-lastFrameTime)/TARGET_FRAME_MS;
+  dt=Math.min(dt,3); // cap to prevent spiral on tab-switch
+  if(dt<0.001)dt=1; // guard against zero/negative
+  lastFrameTime=now;
   const s=state,SPD=5;
 
   // Touch paddle movement (skip AI-controlled sides)
@@ -1717,11 +1763,11 @@ function update(){
       if(countdown>0)playCountdownBeep(countdown);
       else playCountdownBeep(0);
     }
-    movePaddles(s,SPD);updateParticles();drawServe(now);
+    movePaddles(s,SPD,dt);updateParticles(dt);drawServe(now);
     animId=requestAnimationFrame(update);return;
   }
 
-  movePaddles(s,SPD);
+  movePaddles(s,SPD,dt);
 
   // Power-up tick
   // Expire finished power-ups
@@ -1732,8 +1778,8 @@ function update(){
   if(gameMode==='chaos'&&Math.random()<.003)BS=Math.max(6,Math.min(22,BS+(Math.random()*6-3)));
   s.ball.size=BS;
   // Apply ongoing power-up effects
-  if(hasAPU('curve')){s.ball.curve=(s.ball.curve||0)+.07;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12;}
-  if(hasAPU('lead')){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){s.ball.vx*=.995;s.ball.vy*=.995;}}
+  if(hasAPU('curve')){s.ball.curve=(s.ball.curve||0)+.07*dt;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12*dt;}
+  if(hasAPU('lead')){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){const ld=Math.pow(.995,dt);s.ball.vx*=ld;s.ball.vy*=ld;}}
   // Magnet: pull ball toward holder's paddle only when ball is returning to their side
   const magnetPU=getAPU('magnet');
   if(magnetPU){
@@ -1745,13 +1791,13 @@ function update(){
       const padCY=pad.y+ph/2;
       const mdx=padCX-(s.ball.x+BS/2),mdy=padCY-(s.ball.y+BS/2);
       const md=Math.sqrt(mdx*mdx+mdy*mdy);
-      if(md>5){const pull=.55;s.ball.vx+=mdx/md*pull*.3;s.ball.vy+=mdy/md*pull;}
+      if(md>5){const pull=.55;s.ball.vx+=mdx/md*pull*.3*dt;s.ball.vy+=mdy/md*pull*dt;}
     }
   }
 
   // Apply spin drift (English from off-center paddle hits)
-  if(s.ball.spin){s.ball.vy+=s.ball.spin*0.025;s.ball.spin*=0.97;}
-  s.ball.x+=s.ball.vx;s.ball.y+=s.ball.vy;
+  if(s.ball.spin){s.ball.vy+=s.ball.spin*0.025*dt;s.ball.spin*=Math.pow(0.97,dt);}
+  s.ball.x+=s.ball.vx*dt;s.ball.y+=s.ball.vy*dt;
   // Record ball trail for high-rally visual
   ballTrail.push({x:s.ball.x,y:s.ball.y});
   if(ballTrail.length>12)ballTrail.shift();
@@ -1761,13 +1807,17 @@ function update(){
   if(s.ball.y<=0){s.ball.y=0;s.ball.vy=Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
   if(s.ball.y+BS>=H){s.ball.y=H-BS;s.ball.vy=-Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
 
-  // Paddle collisions
+  // Paddle collisions (with swept check to prevent tunneling at high speeds)
   const LP=24,RP=W-24-PW,leftPH=getPH('left'),rightPH=getPH('right');
+  const prevBX=s.ball.x-s.ball.vx*dt; // previous frame x position
   // Curved paddle: opponent's paddle deflects at exaggerated angles
   const cpPU=getAPU('curvedpaddle');
   const curvedL=cpPU&&cpPU.side!=='left';
   const curvedR=cpPU&&cpPU.side!=='right';
-  if(s.ball.vx<0&&s.ball.x<=LP+PW&&s.ball.x>=LP-2&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
+  // Left paddle: detect if ball crossed paddle plane (swept) OR is inside range
+  const leftEdge=LP+PW;
+  const crossedLeft=s.ball.vx<0&&prevBX>=leftEdge&&s.ball.x<=leftEdge;
+  if(s.ball.vx<0&&(crossedLeft||s.ball.x<=LP+PW&&s.ball.x>=LP-2)&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
     s.ball.x=LP+PW;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.left.y+leftPH/2))/(leftPH/2);
@@ -1780,7 +1830,10 @@ function update(){
     lastBrickToucher='left';
     checkFieldPuCollect('left',now);
   }
-  if(s.ball.vx>0&&s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
+  // Right paddle: detect if ball crossed paddle plane (swept) OR is inside range
+  const rightEdge=RP;
+  const crossedRight=s.ball.vx>0&&prevBX+BS<=rightEdge&&s.ball.x+BS>=rightEdge;
+  if(s.ball.vx>0&&(crossedRight||s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4)&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
     s.ball.x=RP-BS;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.right.y+rightPH/2))/(rightPH/2);
@@ -1807,7 +1860,7 @@ function update(){
     }
     if(now-fp.spawnTime>POWERUP_LIFESPAN){fieldPowerups.splice(i,1);if(gameMode!=='chaos')nextPuSpawn=Math.max(nextPuSpawn,now+POWERUP_SPAWN_INTERVAL/2);}
   }
-  const maxField=gameMode==='chaos'?5:1;
+  const maxField=gameMode==='chaos'?3:1;
   if(fieldPowerups.length<maxField&&now>=nextPuSpawn)spawnFieldPowerup(now);
 
   // Portal teleport
@@ -1846,10 +1899,13 @@ function update(){
 
   // Brick collisions
   if(gameMode==='bricks'){
-    if(!hasAPU('freeze'))brickMovePhase+=0.008;
+    if(!hasAPU('freeze'))brickMovePhase+=0.008*dt;
     checkBrickCollision(s.ball,BS);
     if(bricks.every(b=>!b.alive||b.btype==='indestructible'))buildBricks();
   }
+
+  // Announce score to screen readers
+  function announceScore(){const el=document.getElementById('score-live');if(el)el.textContent=`${nameLeft} ${s.left.score}, ${nameRight} ${s.right.score}`;}
 
   // Scoring (with shield save)
   if(s.ball.x<0){
@@ -1859,7 +1915,7 @@ function update(){
       shieldSide=null;shakeAmt=6;
       spawnPuParticles(5,s.ball.y+BS/2);SOUNDS[currentSkin].wall();
     }else{
-      s.right.score++;shakeAmt=8;rightScoreFlash=1.0;
+      s.right.score++;shakeAmt=8;rightScoreFlash=1.0;announceScore();
       // Track deficit for comeback achievement
       const ldR=s.right.score-s.left.score;if(ldR>0)s._maxDeficit.left=Math.max(s._maxDeficit.left,ldR);
       if(s.right.score>=winScore){SOUNDS[currentSkin].gameWin(mode==='ai');endSet('right');return;}
@@ -1872,25 +1928,26 @@ function update(){
       shieldSide=null;shakeAmt=6;
       spawnPuParticles(W-5,s.ball.y+BS/2);SOUNDS[currentSkin].wall();
     }else{
-      s.left.score++;shakeAmt=8;leftScoreFlash=1.0;
+      s.left.score++;shakeAmt=8;leftScoreFlash=1.0;announceScore();
       const ldL=s.left.score-s.right.score;if(ldL>0)s._maxDeficit.right=Math.max(s._maxDeficit.right,ldL);
       if(s.left.score>=winScore){SOUNDS[currentSkin].gameWin(true);endSet('left');return;}
       SOUNDS[currentSkin].score(true);resetBall('right');
     }
   }
 
-  if(hasAPU('decoy'))decoyBalls=decoyBalls.filter(updateDecoyBall);
-  if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8)%360;
-  updateParticles();shakeAmt=Math.max(0,shakeAmt-.6);
-  draw(now);animId=requestAnimationFrame(update);
+  if(hasAPU('decoy'))decoyBalls=decoyBalls.filter(db=>updateDecoyBall(db,dt));
+  if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8*dt)%360;
+  updateParticles(dt);shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.6*dt);
+  _drawDt=dt;draw(now);animId=requestAnimationFrame(update);
 }
 
-function movePaddles(s,SPD){
+function movePaddles(s,SPD,dt){
+  dt=dt||1;
   const leftPH=getPH('left'),rightPH=getPH('right');
   // Slowmo: opponent's paddle speed drops to 30%
   const slowPU=getAPU('slowmo');
-  const leftSPD=(slowPU&&slowPU.side!=='left')?SPD*.3:SPD;
-  const rightSPD=(slowPU&&slowPU.side!=='right')?SPD*.3:SPD;
+  const leftSPD=(slowPU&&slowPU.side!=='left')?SPD*.3*dt:SPD*dt;
+  const rightSPD=(slowPU&&slowPU.side!=='right')?SPD*.3*dt:SPD*dt;
   // Invert: opponent's controls are flipped
   const invertPU=getAPU('invert');
   const invertLeft=invertPU&&invertPU.side!=='left';
@@ -1900,15 +1957,15 @@ function movePaddles(s,SPD){
   const aiRight=tourney?tourneyAI.right:(mode==='ai');
   if(aiLeft&&aiRight){
     // Both AI — no keyboard input
-    if(!serving){moveAI(s.left,s.ball,'left');moveAI(s.right,s.ball,'right');}
+    if(!serving){moveAI(s.left,s.ball,'left',dt);moveAI(s.right,s.ball,'right',dt);}
   }else if(aiRight){
     if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=leftSPD*lUp;
     if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
-    if(!serving)moveAI(s.right,s.ball,'right');
+    if(!serving)moveAI(s.right,s.ball,'right',dt);
   }else if(aiLeft){
     if(keys['w']||keys['W']||keys['ArrowUp'])s.right.y-=rightSPD*rUp;
     if(keys['s']||keys['S']||keys['ArrowDown'])s.right.y+=rightSPD*rUp;
-    if(!serving)moveAI(s.left,s.ball,'left');
+    if(!serving)moveAI(s.left,s.ball,'left',dt);
   }else{
     if(keys['w']||keys['W'])s.left.y-=leftSPD*lUp;if(keys['s']||keys['S'])s.left.y+=leftSPD*lUp;
     if(keys['ArrowUp'])s.right.y-=rightSPD*rUp;if(keys['ArrowDown'])s.right.y+=rightSPD*rUp;
@@ -1993,7 +2050,7 @@ function drawRallyHud(){
   // Detect rally hit increase for shake
   if(rallyHits>prevRallyHits)rallyShake=0.8;
   prevRallyHits=rallyHits;
-  rallyShake*=0.88;if(rallyShake<0.02)rallyShake=0;
+  rallyShake*=Math.pow(0.88,_drawDt);if(rallyShake<0.02)rallyShake=0;
   ctx.save();ctx.textAlign='center';
   const rallyAlpha=Math.min(1,(rallyHits)/4)*.8;
   ctx.globalAlpha=rallyAlpha;
@@ -2163,8 +2220,8 @@ function draw(now){
     ctx.setLineDash([]);ctx.restore();
   }
 
-  // Decay score flash
-  leftScoreFlash*=0.88;rightScoreFlash*=0.88;
+  // Decay score flash (dt-aware — computed in update() before draw())
+  leftScoreFlash*=Math.pow(0.88,_drawDt);rightScoreFlash*=Math.pow(0.88,_drawDt);
   if(leftScoreFlash<0.05)leftScoreFlash=0;
   if(rightScoreFlash<0.05)rightScoreFlash=0;
 
@@ -2440,9 +2497,10 @@ function survStartTurn(){
   document.getElementById('game-ui').style.display='flex';
   const name=survTurn==='left'?nameLeft:nameRight;
   document.getElementById('mlabel').textContent=`${name} · SURVIVAL`;
+  document.getElementById('kb-legend').textContent='A/D or ←/→ move · P pause · +/− volume · space release magnet · T test panel';
   applyGameSkin();
   survInit();
-  keys={};
+  keys={};lastFrameTime=0;
   if(animId)cancelAnimationFrame(animId);
   animId=requestAnimationFrame(survUpdate);
   enterGameplay();
@@ -2452,6 +2510,10 @@ function survStartTurn(){
 function survUpdate(){
   if(paused){animId=requestAnimationFrame(survUpdate);return;}
   const now=performance.now();
+  if(!lastFrameTime)lastFrameTime=now;
+  let dt=(now-lastFrameTime)/TARGET_FRAME_MS;
+  dt=Math.min(dt,3);if(dt<0.001)dt=1;
+  lastFrameTime=now;
   const sv=survState;
   if(!sv||!sv.alive)return;
 
@@ -2462,7 +2524,8 @@ function survUpdate(){
     // AI tracks ball x
     const target=sv.ball.x-sv.paddle.w/2;
     const diff=target-sv.paddle.x;
-    if(Math.abs(diff)>SPD)sv.paddle.x+=Math.sign(diff)*SPD;
+    const step=SPD*dt;
+    if(Math.abs(diff)>step)sv.paddle.x+=Math.sign(diff)*step;
     else sv.paddle.x=target;
     // AI auto-releases magnet paddle after brief hold
     if(survMagnetHeld){
@@ -2470,8 +2533,8 @@ function survUpdate(){
       survMagnetHeld=null;
     }
   }else{
-    if(keys['a']||keys['A']||keys['ArrowLeft']||keys['w']||keys['W'])sv.paddle.x-=SPD;
-    if(keys['d']||keys['D']||keys['ArrowRight']||keys['s']||keys['S'])sv.paddle.x+=SPD;
+    if(keys['a']||keys['A']||keys['ArrowLeft']||keys['w']||keys['W'])sv.paddle.x-=SPD*dt;
+    if(keys['d']||keys['D']||keys['ArrowRight']||keys['s']||keys['S'])sv.paddle.x+=SPD*dt;
     // Touch: move paddle to touch X position
     if(touchX!==null)sv.paddle.x=Math.max(0,Math.min(W-sv.paddle.w,touchX-sv.paddle.w/2));
   }
@@ -2499,8 +2562,8 @@ function survUpdate(){
     // Launch with spacebar (handled in keydown → sets survMagnetHeld=null and gives ball velocity)
   }else{
     // Ball physics (apply spin drift)
-    if(sv.ball.spin){sv.ball.vy+=sv.ball.spin*0.025;sv.ball.spin*=0.97;}
-    sv.ball.x+=sv.ball.vx;sv.ball.y+=sv.ball.vy;
+    if(sv.ball.spin){sv.ball.vy+=sv.ball.spin*0.025*dt;sv.ball.spin*=Math.pow(0.97,dt);}
+    sv.ball.x+=sv.ball.vx*dt;sv.ball.y+=sv.ball.vy*dt;
     ballTrail.push({x:sv.ball.x,y:sv.ball.y});
     if(ballTrail.length>12)ballTrail.shift();
   }
@@ -2606,7 +2669,7 @@ function survUpdate(){
   // Multi-ball extra balls physics
   for(const eb of survExtraBalls){
     if(!eb.alive)continue;
-    eb.x+=eb.vx;eb.y+=eb.vy;eb.size=BS;
+    eb.x+=eb.vx*dt;eb.y+=eb.vy*dt;eb.size=BS;
     if(eb.x<=0){eb.x=0;eb.vx=Math.abs(eb.vx);}
     if(eb.x+BS>=W){eb.x=W-BS;eb.vx=-Math.abs(eb.vx);}
     if(eb.y<=0){eb.y=0;eb.vy=Math.abs(eb.vy);}
@@ -2639,7 +2702,7 @@ function survUpdate(){
 
   // Decoy ball brick breaking
   for(const db of survDecoyBalls){
-    db.x+=db.vx;db.y+=db.vy;
+    db.x+=db.vx*dt;db.y+=db.vy*dt;
     if(db.x<0||db.x>W||db.y<0||db.y>H){db.dead=true;continue;}
     for(const b of sv.bricks){
       if(!b.alive)continue;
@@ -2681,10 +2744,10 @@ function survUpdate(){
   let effectiveSpeed=sv.brickSpeed;
   if(survFrozen)effectiveSpeed=0;
   else if(hasAPU('survslowmo'))effectiveSpeed*=.4;
-  for(const b of sv.bricks)b.y+=effectiveSpeed;
+  for(const b of sv.bricks)b.y+=effectiveSpeed*dt;
 
   // Field power-ups also fall with bricks
-  for(const fp of fieldPowerups)fp.y+=effectiveSpeed;
+  for(const fp of fieldPowerups)fp.y+=effectiveSpeed*dt;
 
   // Field power-up collection (ball hits OR paddle contact)
   for(let i=fieldPowerups.length-1;i>=0;i--){
@@ -2724,8 +2787,8 @@ function survUpdate(){
   // Clean dead bricks that scrolled off
   sv.bricks=sv.bricks.filter(b=>b.alive||b.y<H+50);
 
-  updateParticles();shakeAmt=Math.max(0,shakeAmt-.5);
-  survDraw(now);
+  updateParticles(dt);shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.5*dt);
+  _drawDt=dt;survDraw(now);
   animId=requestAnimationFrame(survUpdate);
 }
 
@@ -3109,10 +3172,35 @@ function survEndTurn(time){
     return;
   }
   if(mode==='ai'&&survTurn==='left'){
-    survTurn='right';
+    // Solo survival — skip AI turn, show player's result directly
+    resizeCanvas(700,450);
     setTimeout(()=>{
-      survShowTurnScreen();
-      setTimeout(()=>survStartTurn(),1500);
+      const t1=time;
+      const wname=nameLeft;
+      const isPB=recordSurvivalTime(wname,t1);
+      ['pw','game-over'].forEach(id=>{
+        const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
+      });
+      document.body.style.background=sk.menuBg;
+      document.getElementById('wtxt').textContent=`${wname} survived!`;
+      document.getElementById('wtxt').style.color=sk.menuFg;
+      document.getElementById('wscr').textContent=`${(t1/1000).toFixed(1)}s`;
+      document.getElementById('wscr').style.color=sk.menuFg;
+      document.getElementById('wmatch').textContent=isPB?'New personal best!':'';
+      document.getElementById('wmatch').style.color=sk.menuFg;
+      ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
+      document.getElementById('rabtn').textContent='Play again';
+      document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
+      const badgePop=document.getElementById('badge-pop');
+      if(newBadgesThisRound.length){
+        badgePop.innerHTML=newBadgesThisRound.map(b=>{
+          const a=ACHIEVEMENTS[b.id];
+          return`<div style="opacity:.9;">${a.icon} <b>${a.name}</b> unlocked! <span style="opacity:.5;">${a.desc}</span></div>`;
+        }).join('');
+      }else{badgePop.innerHTML='';}
+      document.getElementById('game-ui').style.display='none';
+      document.getElementById('game-over').style.display='flex';
+      window.scrollTo(0,0);
     },1500);
     return;
   }
