@@ -873,12 +873,13 @@ window.addEventListener('resize',checkRotatePrompt);
 window.addEventListener('orientationchange',()=>setTimeout(checkRotatePrompt,250));
 
 const AI_SPEED={easy:2.2,medium:3.8,hard:5.6};
-const AI_ERROR={easy:60,medium:22,hard:4};
+const AI_ERROR={easy:70,medium:38,hard:6};
 const BASE_SPEED=4.5,SPEED_RAMP=0.06,MAX_SPEED=14;
 function rallySpeedBonus(hits){
-  // Linear ramp up to rally 10, then exponential acceleration
+  // Linear ramp up to rally 10, then gentler logarithmic scaling
   if(hits<=10)return SPEED_RAMP*hits;
-  return SPEED_RAMP*10+SPEED_RAMP*(hits-10)*1.5;
+  const bonus=SPEED_RAMP*10+SPEED_RAMP*Math.log2(hits-9)*2;
+  return Math.min(bonus,MAX_SPEED-BASE_SPEED); // never exceed max
 }
 
 let mode,animId,paused=false,state,particles=[];
@@ -1061,7 +1062,8 @@ function showPuPopup(side,type){
   inner.style.background=sk.puBg;inner.style.borderColor=pu.color;inner.style.color=sk.puText;
   popup.classList.add('show');
   if(puPopupTimeout)clearTimeout(puPopupTimeout);
-  puPopupTimeout=setTimeout(()=>popup.classList.remove('show'),2200);
+  const popupMs=SKINS[currentSkin].chaos?3500:2200;
+  puPopupTimeout=setTimeout(()=>popup.classList.remove('show'),popupMs);
 }
 function activatePowerup(type,side,now){
   if(hasAPU('decoy'))decoyBalls=[];
@@ -1402,7 +1404,7 @@ function initGameState(){
   shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;blackholePos=null;
   bricks=[];
   if(gameMode==='bricks')buildBricks();
-  const gs={left:{y:H/2-PH/2,score:0},right:{y:H/2-PH/2,score:0},ball:{x:W/2,y:H/2,vx:0,vy:0,size:10,curve:0,spin:0,_portalCooldown:false},_maxDeficit:{left:0,right:0}};
+  const gs={left:{y:H/2-PH/2,score:0},right:{y:H/2-PH/2,score:0},ball:{x:W/2,y:H/2,vx:0,vy:0,size:10,curve:0,spin:0,_portalCooldown:0},_maxDeficit:{left:0,right:0}};
   return gs;
 }
 
@@ -1669,17 +1671,19 @@ function handleTouch(e){
 let aiErrorLeft=0,aiErrorRight=0;
 // Predict where the ball will arrive at a given x, accounting for wall bounces
 function predictBallY(ball,targetX){
-  let bx=ball.x,by=ball.y,vx=ball.vx,vy=ball.vy;
+  let bx=ball.x,by=ball.y,vx=ball.vx,vy=ball.vy,spin=ball.spin||0;
   if(vx===0)return by;
-  // Only predict if ball is heading toward targetX
   if((targetX>bx&&vx<0)||(targetX<bx&&vx>0))return by;
-  const steps=Math.abs((targetX-bx)/vx);
-  let py=by+vy*steps;
-  // Simulate wall bounces
-  while(py<0||py>H){
-    if(py<0){py=-py;} else if(py>H){py=2*H-py;}
+  // Step simulation to account for spin curving the trajectory
+  for(let i=0;i<300;i++){
+    vy+=spin*0.025;
+    spin*=0.97;
+    bx+=vx;by+=vy;
+    if(by<0){by=-by;vy=Math.abs(vy);}
+    if(by>H){by=2*H-by;vy=-Math.abs(vy);}
+    if((vx>0&&bx>=targetX)||(vx<0&&bx<=targetX))return by;
   }
-  return py;
+  return by;
 }
 function moveAI(paddle,ball,side,dt){
   side=side||'right';dt=dt||1;
@@ -1689,10 +1693,10 @@ function moveAI(paddle,ball,side,dt){
   if(state){
     const myScore=state[side].score,oppScore=state[side==='left'?'right':'left'].score;
     const gap=oppScore-myScore; // positive = this AI losing
-    if(gap>=3){spd*=1.15;maxErr*=0.6;}
-    else if(gap>=2){spd*=1.07;maxErr*=0.8;}
-    else if(gap<=-3){spd*=0.85;maxErr*=1.4;}
-    else if(gap<=-2){spd*=0.93;maxErr*=1.2;}
+    if(gap>=3){spd*=1.08;maxErr*=0.8;}
+    else if(gap>=2){spd*=1.04;maxErr*=0.9;}
+    else if(gap<=-3){spd*=0.90;maxErr*=1.3;}
+    else if(gap<=-2){spd*=0.95;maxErr*=1.15;}
   }
   // Per-side error tracking so two AIs don't share drift
   if(side==='left'){
@@ -1725,11 +1729,22 @@ function moveAI(paddle,ball,side,dt){
 // ═══════════════════════════════════════════════════════════════════
 function updateDecoyBall(db,dt){
   dt=dt||1;
+  // Apply spin drift like the real ball
+  if(db.spin){db.vy+=db.spin*0.025*dt;db.spin*=Math.pow(0.97,dt);}
   db.x+=db.vx*dt;db.y+=db.vy*dt;
   if(db.y<=0){db.y=0;db.vy*=-1;}if(db.y+10>=H){db.y=H-10;db.vy*=-1;}
   const LP=24,RP=W-24-PW;
-  if(db.vx<0&&db.x<=LP+PW&&db.x>=LP-2&&db.y+10>=state.left.y&&db.y<=state.left.y+PH){db.x=LP+PW;db.vx=Math.abs(db.vx);}
-  if(db.vx>0&&db.x+10>=RP&&db.x+10<=RP+PW+4&&db.y+10>=state.right.y&&db.y<=state.right.y+PH){db.x=RP-10;db.vx=-Math.abs(db.vx);}
+  if(db.vx<0&&db.x<=LP+PW&&db.x>=LP-2&&db.y+10>=state.left.y&&db.y<=state.left.y+PH){
+    db.x=LP+PW;db.vx=Math.abs(db.vx);
+    const rel=(db.y+5-(state.left.y+PH/2))/(PH/2);db.spin=rel*0.3;
+  }
+  if(db.vx>0&&db.x+10>=RP&&db.x+10<=RP+PW+4&&db.y+10>=state.right.y&&db.y<=state.right.y+PH){
+    db.x=RP-10;db.vx=-Math.abs(db.vx);
+    const rel=(db.y+5-(state.right.y+PH/2))/(PH/2);db.spin=rel*0.3;
+  }
+  // Bounce off shields so decoys don't visually pass through
+  if(shieldSide==='left'&&db.vx<0&&db.x<=4){db.x=4;db.vx=Math.abs(db.vx);}
+  if(shieldSide==='right'&&db.vx>0&&db.x+10>=W-4){db.x=W-14;db.vx=-Math.abs(db.vx);}
   return db.x>-20&&db.x<W+20;
 }
 
@@ -1810,36 +1825,82 @@ function update(){
   // Paddle collisions (with swept check to prevent tunneling at high speeds)
   const LP=24,RP=W-24-PW,leftPH=getPH('left'),rightPH=getPH('right');
   const prevBX=s.ball.x-s.ball.vx*dt; // previous frame x position
-  // Curved paddle: opponent's paddle deflects at exaggerated angles
+  // Curved paddle: opponent's paddle gets a curved arc surface
   const cpPU=getAPU('curvedpaddle');
   const curvedL=cpPU&&cpPU.side!=='left';
   const curvedR=cpPU&&cpPU.side!=='right';
-  // Left paddle: detect if ball crossed paddle plane (swept) OR is inside range
+
+  // Arc collision for curved paddles — ball bounces off the visual arc surface
+  let curvedHitL=false,curvedHitR=false;
+  if(curvedL&&s.ball.vx<0){
+    const arcCX=LP+PW+12,arcCY=s.left.y+leftPH/2,arcR=leftPH*0.6;
+    const bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
+    const dx=bcx-arcCX,dy=bcy-arcCY,dist=Math.sqrt(dx*dx+dy*dy);
+    const ang=Math.atan2(dy,dx);
+    if(dist<arcR+BS/2+2&&ang>=-Math.PI*0.45&&ang<=Math.PI*0.45){
+      curvedHitL=true;
+      const nx=dx/dist,ny=dy/dist;
+      s.ball.x=arcCX+nx*(arcR+BS/2+1)-BS/2;
+      s.ball.y=arcCY+ny*(arcR+BS/2+1)-BS/2;
+      rallyHits++;rallyPopT=performance.now();
+      if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
+      const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
+      s.ball.vx=Math.abs(nx)*spd;if(s.ball.vx<spd*0.2)s.ball.vx=spd*0.2;
+      s.ball.vy=ny*spd;
+      s.ball.spin=ny*0.25;
+      if(hasAPU('curve'))s.ball.curve=0;
+      spawnParticles(s.ball.x,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+      lastBrickToucher='left';
+      checkFieldPuCollect('left',now);
+    }
+  }
+  if(curvedR&&s.ball.vx>0){
+    const arcCX=RP-12,arcCY=s.right.y+rightPH/2,arcR=rightPH*0.6;
+    const bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
+    const dx=bcx-arcCX,dy=bcy-arcCY,dist=Math.sqrt(dx*dx+dy*dy);
+    const ang=Math.atan2(dy,dx);
+    if(dist<arcR+BS/2+2&&(ang>=Math.PI*0.55||ang<=-Math.PI*0.55)){
+      curvedHitR=true;
+      const nx=dx/dist,ny=dy/dist;
+      s.ball.x=arcCX+nx*(arcR+BS/2+1)-BS/2;
+      s.ball.y=arcCY+ny*(arcR+BS/2+1)-BS/2;
+      rallyHits++;rallyPopT=performance.now();
+      if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
+      const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
+      s.ball.vx=-Math.abs(nx)*spd;if(s.ball.vx>-spd*0.2)s.ball.vx=-spd*0.2;
+      s.ball.vy=ny*spd;
+      s.ball.spin=ny*0.25;
+      if(hasAPU('curve'))s.ball.curve=0;
+      spawnParticles(s.ball.x+BS,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+      lastBrickToucher='right';
+      checkFieldPuCollect('right',now);
+    }
+  }
+
+  // Left paddle: flat collision (skipped if arc already handled it)
   const leftEdge=LP+PW;
   const crossedLeft=s.ball.vx<0&&prevBX>=leftEdge&&s.ball.x<=leftEdge;
-  if(s.ball.vx<0&&(crossedLeft||s.ball.x<=LP+PW&&s.ball.x>=LP-2)&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
+  if(!curvedHitL&&s.ball.vx<0&&(crossedLeft||s.ball.x<=LP+PW&&s.ball.x>=LP-2)&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
     s.ball.x=LP+PW;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.left.y+leftPH/2))/(leftPH/2);
-    const angMul=curvedL?1.4:.8;
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
-    s.ball.vx=Math.abs(Math.cos(rel*angMul)*spd);s.ball.vy=Math.sin(rel*angMul)*spd;
+    s.ball.vx=Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
     if(hasAPU('curve'))s.ball.curve=0;
     spawnParticles(LP+PW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     lastBrickToucher='left';
     checkFieldPuCollect('left',now);
   }
-  // Right paddle: detect if ball crossed paddle plane (swept) OR is inside range
+  // Right paddle: flat collision (skipped if arc already handled it)
   const rightEdge=RP;
   const crossedRight=s.ball.vx>0&&prevBX+BS<=rightEdge&&s.ball.x+BS>=rightEdge;
-  if(s.ball.vx>0&&(crossedRight||s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4)&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
+  if(!curvedHitR&&s.ball.vx>0&&(crossedRight||s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4)&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
     s.ball.x=RP-BS;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.right.y+rightPH/2))/(rightPH/2);
-    const angMul=curvedR?1.4:.8;
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
-    s.ball.vx=-Math.abs(Math.cos(rel*angMul)*spd);s.ball.vy=Math.sin(rel*angMul)*spd;
+    s.ball.vx=-Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
     if(hasAPU('curve'))s.ball.curve=0;
     spawnParticles(RP,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
@@ -1868,14 +1929,14 @@ function update(){
     const portalR=22,bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
     const daA=Math.sqrt((bcx-portalA.x)**2+(bcy-portalA.y)**2);
     const daB=Math.sqrt((bcx-portalB.x)**2+(bcy-portalB.y)**2);
-    if(daA<portalR+BS/2&&!s.ball._portalCooldown){
-      s.ball.x=portalB.x-BS/2;s.ball.y=portalB.y-BS/2;s.ball._portalCooldown=true;
+    // Frame-count cooldown prevents infinite teleport loops between close portals
+    if(s.ball._portalCooldown>0)s.ball._portalCooldown=Math.max(0,s.ball._portalCooldown-dt);
+    if(daA<portalR+BS/2&&s.ball._portalCooldown<=0){
+      s.ball.x=portalB.x-BS/2;s.ball.y=portalB.y-BS/2;s.ball._portalCooldown=12;
       shakeAmt=4;spawnPuParticles(portalB.x,portalB.y);SOUNDS[currentSkin].wall();
-    }else if(daB<portalR+BS/2&&!s.ball._portalCooldown){
-      s.ball.x=portalA.x-BS/2;s.ball.y=portalA.y-BS/2;s.ball._portalCooldown=true;
+    }else if(daB<portalR+BS/2&&s.ball._portalCooldown<=0){
+      s.ball.x=portalA.x-BS/2;s.ball.y=portalA.y-BS/2;s.ball._portalCooldown=12;
       shakeAmt=4;spawnPuParticles(portalA.x,portalA.y);SOUNDS[currentSkin].wall();
-    }else if(daA>portalR+BS/2+10&&daB>portalR+BS/2+10){
-      s.ball._portalCooldown=false;
     }
   }
 
@@ -1987,6 +2048,8 @@ function drawPaddle(x,y,ph,sk,glow){
   if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(x,y,PW,ph,5);ctx.fill();}
   else if(sk.paddleShape==='thin'){ctx.fillRect(x+3,y,PW-6,ph);}
   else{ctx.fillRect(x,y,PW,ph);}
+  // Chaos: add dashed outline for colorblind differentiation
+  if(sk.chaos){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.globalAlpha=.4;ctx.setLineDash([3,3]);ctx.strokeRect(x,y,PW,ph);ctx.setLineDash([]);}
   ctx.restore();
 }
 function drawBall(x,y,BS,sk,isDecoy,isGhost){
@@ -1997,6 +2060,12 @@ function drawBall(x,y,BS,sk,isDecoy,isGhost){
   if(sk.ballShape==='circle'){ctx.beginPath();ctx.arc(x+BS/2,y+BS/2,BS/2,0,Math.PI*2);ctx.fill();}
   else if(sk.ballShape==='diamond'){ctx.beginPath();ctx.moveTo(x+BS/2,y);ctx.lineTo(x+BS,y+BS/2);ctx.lineTo(x+BS/2,y+BS);ctx.lineTo(x,y+BS/2);ctx.closePath();ctx.fill();}
   else{ctx.fillRect(x,y,BS,BS);}
+  // Chaos: crosshair on real ball, X on decoys for colorblind differentiation
+  if(sk.chaos&&!isGhost){
+    ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.globalAlpha=isDecoy?.3:.5;
+    if(isDecoy){ctx.beginPath();ctx.moveTo(x+2,y+2);ctx.lineTo(x+BS-2,y+BS-2);ctx.moveTo(x+BS-2,y+2);ctx.lineTo(x+2,y+BS-2);ctx.stroke();}
+    else{ctx.beginPath();ctx.moveTo(x+BS/2,y+1);ctx.lineTo(x+BS/2,y+BS-1);ctx.moveTo(x+1,y+BS/2);ctx.lineTo(x+BS-1,y+BS/2);ctx.stroke();}
+  }
   ctx.restore();
 }
 function drawFieldPowerup(now){
@@ -2221,7 +2290,8 @@ function draw(now){
   }
 
   // Decay score flash (dt-aware — computed in update() before draw())
-  leftScoreFlash*=Math.pow(0.88,_drawDt);rightScoreFlash*=Math.pow(0.88,_drawDt);
+  const vizDt=Math.min(_drawDt,1.5); // cap visual decay so animations stay smooth at low FPS
+  leftScoreFlash*=Math.pow(0.88,vizDt);rightScoreFlash*=Math.pow(0.88,vizDt);
   if(leftScoreFlash<0.05)leftScoreFlash=0;
   if(rightScoreFlash<0.05)rightScoreFlash=0;
 
@@ -2325,11 +2395,12 @@ function draw(now){
   if(hasAPU('decoy')){for(const db of decoyBalls)drawBall(db.x,db.y,10,sk,true);}
   const BS=s.ball.size||10;
   const isGhost=hasAPU('ghost');
-  // Ball trail at high rallies (always in chaos mode)
-  if((rallyHits>=8||gameMode==='chaos')&&ballTrail.length>1){
+  // Ball trail — fades in from rally 4, full at rally 10 (always in chaos mode)
+  const trailIntensity=gameMode==='chaos'?1:Math.min(1,Math.max(0,(rallyHits-4)/6));
+  if(trailIntensity>0&&ballTrail.length>1){
     ctx.save();
     for(let i=0;i<ballTrail.length-1;i++){
-      const t=ballTrail[i],a=(i+1)/ballTrail.length*0.3;
+      const t=ballTrail[i],a=(i+1)/ballTrail.length*0.3*trailIntensity;
       ctx.globalAlpha=a;ctx.fillStyle=sk.accent;
       if(sk.ballShape==='circle'){ctx.beginPath();ctx.arc(t.x+BS/2,t.y+BS/2,BS/2*.7,0,Math.PI*2);ctx.fill();}
       else{ctx.fillRect(t.x+BS*.15,t.y+BS*.15,BS*.7,BS*.7);}
@@ -2559,6 +2630,11 @@ function survUpdate(){
     // Ball tracks paddle
     sv.ball.x=sv.paddle.x+sv.paddle.w/2-BS/2;
     sv.ball.y=H-24-BS-2;
+    // Auto-release after 2 seconds to prevent permanent stall
+    if(performance.now()-survMagnetHeld.grabbed>2000){
+      sv.ball.vx=survMagnetHeld.vx;sv.ball.vy=-Math.abs(survMagnetHeld.vy);
+      survMagnetHeld=null;
+    }
     // Launch with spacebar (handled in keydown → sets survMagnetHeld=null and gives ball velocity)
   }else{
     // Ball physics (apply spin drift)
@@ -2601,7 +2677,7 @@ function survUpdate(){
   if(!survMagnetHeld&&sv.ball.vy>0&&sv.ball.y+BS>=py&&sv.ball.y+BS<=py+ph+4&&sv.ball.x+BS>=px&&sv.ball.x<=px+pw){
     if(hasAPU('magnetpaddle')){
       // Catch ball on paddle
-      survMagnetHeld={vx:sv.ball.vx,vy:sv.ball.vy};
+      survMagnetHeld={vx:sv.ball.vx,vy:sv.ball.vy,grabbed:performance.now()};
       sv.ball.y=py-BS-2;
     }else{
       sv.ball.y=py-BS;
@@ -2939,14 +3015,21 @@ function survDraw(now){
   // Freeze overlay on bricks
   if(survFrozen){
     ctx.save();ctx.globalAlpha=.15;ctx.fillStyle='#67e8f9';ctx.fillRect(0,0,W,H);ctx.restore();
-    // Icy sparkle on bricks
-    for(const b of sv.bricks){
-      if(!b.alive)continue;
-      if(Math.random()<.05){
-        ctx.save();ctx.fillStyle='#fff';ctx.globalAlpha=.6;
-        ctx.beginPath();ctx.arc(b.x+Math.random()*b.w,b.y+Math.random()*b.h,1.5,0,Math.PI*2);ctx.fill();ctx.restore();
+    // Icy sparkle on bricks — time-based pattern prevents random flicker
+    const sparklePhase=Math.floor(now/120); // changes every 120ms
+    ctx.save();ctx.fillStyle='#fff';
+    for(let bi=0;bi<sv.bricks.length;bi++){
+      const b=sv.bricks[bi];if(!b.alive)continue;
+      // Deterministic sparkle: each brick gets 1-2 stable sparkles that shift position slowly
+      const seed=(bi*7+sparklePhase)%17;
+      if(seed<3){
+        const sx=b.x+(((bi*13+sparklePhase*3)%100)/100)*b.w;
+        const sy=b.y+(((bi*29+sparklePhase*7)%100)/100)*b.h;
+        ctx.globalAlpha=.4+.2*Math.sin(now/200+bi);
+        ctx.beginPath();ctx.arc(sx,sy,1.5,0,Math.PI*2);ctx.fill();
       }
     }
+    ctx.restore();
   }
 
   // Laser beam from paddle — plasma effect
@@ -3025,19 +3108,20 @@ function survDraw(now){
   // Draw ball
   const bx=sv.ball.x,by=sv.ball.y;
 
-  // Fireball effect — flame with smoke trail and embers
+  // Fireball effect — flame with smoke trail and embers (scales with ball size)
   if(survFireball){
     const cx=bx+BS/2,cy=by+BS/2;
     const vx=sv.ball.vx,vy=sv.ball.vy;
     const spd=Math.sqrt(vx*vx+vy*vy)||1;
     const tx=-vx/spd,ty=-vy/spd; // trail direction (opposite velocity)
+    const sc=BS/10; // scale factor (1.0 at default size 10, 2.6 at big ball 26)
     ctx.save();
     // Smoke trail (grey puffs behind ball)
     for(let i=0;i<5;i++){
-      const dist=8+i*7+Math.random()*6;
-      const smx=cx+tx*dist+(Math.random()-.5)*8;
-      const smy=cy+ty*dist+(Math.random()-.5)*8;
-      const sr=3+i*1.5+Math.random()*2;
+      const dist=(8+i*7)*sc+Math.random()*6*sc;
+      const smx=cx+tx*dist+(Math.random()-.5)*8*sc;
+      const smy=cy+ty*dist+(Math.random()-.5)*8*sc;
+      const sr=(3+i*1.5+Math.random()*2)*sc;
       ctx.globalAlpha=.12-.02*i;
       ctx.fillStyle=`rgba(${80+i*20},${70+i*15},${60+i*10},.5)`;
       ctx.beginPath();ctx.arc(smx,smy,sr,0,Math.PI*2);ctx.fill();
@@ -3045,10 +3129,10 @@ function survDraw(now){
     ctx.globalAlpha=1;
     // Ember trail (orange/yellow sparks)
     for(let i=0;i<6;i++){
-      const dist=4+Math.random()*20;
-      const ex=cx+tx*dist+(Math.random()-.5)*12;
-      const ey=cy+ty*dist+(Math.random()-.5)*12;
-      const er=1+Math.random()*2;
+      const dist=(4+Math.random()*20)*sc;
+      const ex=cx+tx*dist+(Math.random()-.5)*12*sc;
+      const ey=cy+ty*dist+(Math.random()-.5)*12*sc;
+      const er=(1+Math.random()*2)*sc;
       ctx.globalAlpha=.5+Math.random()*.4;
       ctx.fillStyle=Math.random()<.6?'#ff8c00':'#ffcc00';
       ctx.beginPath();ctx.arc(ex,ey,er,0,Math.PI*2);ctx.fill();
@@ -3067,7 +3151,7 @@ function survDraw(now){
       ctx.fillStyle=grd;ctx.beginPath();ctx.arc(fx,fy,fr,0,Math.PI*2);ctx.fill();
     }
     // Hot white-yellow core
-    ctx.shadowColor='#ff6600';ctx.shadowBlur=20;
+    ctx.shadowColor='#ff6600';ctx.shadowBlur=20*sc;
     const coreGrd=ctx.createRadialGradient(cx,cy,0,cx,cy,BS/2);
     coreGrd.addColorStop(0,'rgba(255,255,220,.95)');
     coreGrd.addColorStop(.5,'#ffcc00');
@@ -3076,10 +3160,10 @@ function survDraw(now){
     ctx.restore();
     // Spawn persistent smoke+ember particles behind ball
     if(Math.random()<.7){
-      particles.push({x:cx+tx*6+(Math.random()-.5)*6,y:cy+ty*6+(Math.random()-.5)*6,vx:tx*.8+(Math.random()-.5),vy:ty*.8+(Math.random()-.5),life:1,decay:.04,size:2+Math.random()*3,brickColor:'rgba(100,90,80,.4)'});
+      particles.push({x:cx+tx*6*sc+(Math.random()-.5)*6*sc,y:cy+ty*6*sc+(Math.random()-.5)*6*sc,vx:tx*.8+(Math.random()-.5),vy:ty*.8+(Math.random()-.5),life:1,decay:.04,size:(2+Math.random()*3)*sc,brickColor:'rgba(100,90,80,.4)'});
     }
     if(Math.random()<.5){
-      particles.push({x:cx+tx*4+(Math.random()-.5)*8,y:cy+ty*4+(Math.random()-.5)*8,vx:tx*1.5+(Math.random()-.5)*2,vy:ty*1.5+(Math.random()-.5)*2-1,life:1,decay:.06,size:1+Math.random()*2,brickColor:Math.random()<.5?'#ff8c00':'#ffcc00'});
+      particles.push({x:cx+tx*4*sc+(Math.random()-.5)*8*sc,y:cy+ty*4*sc+(Math.random()-.5)*8*sc,vx:tx*1.5+(Math.random()-.5)*2,vy:ty*1.5+(Math.random()-.5)*2-1,life:1,decay:.06,size:(1+Math.random()*2)*sc,brickColor:Math.random()<.5?'#ff8c00':'#ffcc00'});
     }
   }else{
     drawBall(bx,by,BS,sk,false,false);
