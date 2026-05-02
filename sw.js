@@ -1,10 +1,19 @@
-const CACHE_NAME = 'pong-v2';
+const CACHE_NAME = 'pong-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './css/styles.css',
+  './js/01-audio.js',
+  './js/02-config-and-state.js',
+  './js/03-effects-powerups-bricks.js',
+  './js/04-classic-gameplay.js',
+  './js/05-rendering.js',
+  './js/06-survival.js',
+  './js/07-tournament.js',
+  './js/08-boot-and-test.js'
 ];
 
 // Install: cache all assets
