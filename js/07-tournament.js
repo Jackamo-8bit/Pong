@@ -36,7 +36,7 @@ function tourneyRenderPlayers(){
   cont.innerHTML='';
   tourney.players.forEach((p,i)=>{
     const row=document.createElement('div');row.className='tp-row';
-    row.innerHTML=`<input class="tp-name" maxlength="12" value="${p.name}" onchange="tourney.players[${i}].name=this.value">`
+    row.innerHTML=`<input class="tp-name" maxlength="12" value="${escapeHtml(p.name)}" onchange="tourney.players[${i}].name=this.value">`
       +(p.isAI?`<span class="tp-ai-tag">AI</span>`:'')
       +`<button class="tp-rm" onclick="tourneyRemovePlayer(${i})">×</button>`;
     cont.appendChild(row);
@@ -197,11 +197,11 @@ function tourneyRenderBracket(containerId){
       html+=`<div class="${cls}" style="${border}">`;
       if(m.p1){
         const w=m.winner&&m.winner===m.p1?'winner':(m.winner?'loser':'');
-        html+=`<div class="bm-p ${w}"><span>${m.p1.name}${m.p1.isAI?' 🤖':''}</span>${m.score&&m.score!=='BYE'?`<span>${m.winner===m.p1?'✓':''}</span>`:''}</div>`;
+        html+=`<div class="bm-p ${w}"><span>${escapeHtml(m.p1.name)}${m.p1.isAI?' 🤖':''}</span>${m.score&&m.score!=='BYE'?`<span>${m.winner===m.p1?'✓':''}</span>`:''}</div>`;
       }else{html+=`<div class="bm-p bm-bye">TBD</div>`;}
       if(m.p2){
         const w=m.winner&&m.winner===m.p2?'winner':(m.winner?'loser':'');
-        html+=`<div class="bm-p ${w}"><span>${m.p2.name}${m.p2.isAI?' 🤖':''}</span>${m.score&&m.score!=='BYE'?`<span>${m.winner===m.p2?'✓':''}</span>`:''}</div>`;
+        html+=`<div class="bm-p ${w}"><span>${escapeHtml(m.p2.name)}${m.p2.isAI?' 🤖':''}</span>${m.score&&m.score!=='BYE'?`<span>${m.winner===m.p2?'✓':''}</span>`:''}</div>`;
       }else if(m.score==='BYE'){html+=`<div class="bm-p bm-bye">bye</div>`;}
       else{html+=`<div class="bm-p bm-bye">TBD</div>`;}
       if(m.score&&m.score!=='BYE')html+=`<div style="font-size:9px;opacity:.4;text-align:center;">${m.score}</div>`;
@@ -291,4 +291,3 @@ function showTourneyWinner(){
   // Play win sound
   SOUNDS[currentSkin].gameWin(true);
 }
-

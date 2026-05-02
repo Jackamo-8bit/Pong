@@ -194,7 +194,7 @@ function buildLeaderboard(){
       +entries.slice(0,8).map(([name,v])=>{
         const lp=v.lastPlayed?formatDate(v.lastPlayed):'—';
         const badges=playerBadges(name).map(id=>ACHIEVEMENTS[id]?.icon||'').join('');
-        return`<div class="lb-row"><span>${name} ${badges}</span><span>${v.survpb.toFixed(1)}s</span><span>${lp}</span></div>`;
+        return`<div class="lb-row"><span>${escapeHtml(name)} ${badges}</span><span>${v.survpb.toFixed(1)}s</span><span>${lp}</span></div>`;
       }).join('');
   }else{
     entries.sort((a,b)=>b[1].wins-a[1].wins);
@@ -202,7 +202,7 @@ function buildLeaderboard(){
     lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>W</span><span>L</span><span>Rally PB</span>${isBricks?'<span>Bricks</span>':''}<span>Games</span></div>`
       +entries.slice(0,8).map(([name,v])=>{
         const badges=playerBadges(name).map(id=>ACHIEVEMENTS[id]?.icon||'').join('');
-        return`<div class="lb-row"><span>${name} ${badges}</span><span>${v.wins}</span><span>${v.losses}</span><span>${v.rallypb||0}</span>${isBricks?`<span>${v.bricksBroken||0}</span>`:''}<span>${v.gamesPlayed||v.wins+v.losses}</span></div>`;
+        return`<div class="lb-row"><span>${escapeHtml(name)} ${badges}</span><span>${v.wins}</span><span>${v.losses}</span><span>${v.rallypb||0}</span>${isBricks?`<span>${v.bricksBroken||0}</span>`:''}<span>${v.gamesPlayed||v.wins+v.losses}</span></div>`;
       }).join('');
   }
 }
@@ -368,6 +368,15 @@ function getBallSize(){
   if(hasAPU('smallball'))return 5;
   return 10;
 }
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g,ch=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[ch]));
+}
 function playerName(side){return side==='left'?nameLeft:nameRight;}
 function opponentName(side){return side==='left'?nameRight:nameLeft;}
 
@@ -429,4 +438,3 @@ function applyGameSkin(){
   document.getElementById('kb-legend').style.color=s.fg;
   document.getElementById('vol-slider').style.color=s.fg;
 }
-

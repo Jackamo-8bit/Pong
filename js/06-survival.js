@@ -868,7 +868,7 @@ function survEndTurn(time){
     if(allBadges.length){
       badgePop.innerHTML=allBadges.map(b=>{
         const a=ACHIEVEMENTS[b.id];
-        return`<div style="opacity:.9;">${a.icon} <b>${b.player}: ${a.name}</b> unlocked! <span style="opacity:.5;">${a.desc}</span></div>`;
+        return`<div style="opacity:.9;">${a.icon} <b>${escapeHtml(b.player)}: ${a.name}</b> unlocked! <span style="opacity:.5;">${a.desc}</span></div>`;
       }).join('');
     }else{badgePop.innerHTML='';}
     document.getElementById('game-over').style.display='flex';
@@ -884,4 +884,3 @@ function survEndTurn(time){
     }
   },1500);
 }
-
