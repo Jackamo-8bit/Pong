@@ -255,15 +255,13 @@ function fitCanvasToViewport(){
   wrap.style.position='relative';
   wrap.style.left='';wrap.style.top='';
   const cw=W+MARGIN*2,ch=H+MARGIN*2;
-  const small=window.innerWidth<1024&&window.innerHeight<600;
-  // In gameplay on small screens, shrink padding and constrain to viewport
-  if(inGameplay&&small){
-    pw.style.padding='0';
-    gui.style.height='100vh';gui.style.maxHeight='100vh';
-    gui.style.overflow='hidden';gui.style.justifyContent='center';
-    const barH=44; // bar height + gap estimate
-    const maxW=window.innerWidth-8;
-    const maxH=window.innerHeight-barH-8;
+  const vw=window.innerWidth,vh=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  const isMobile=vw<760;
+
+  if(inGameplay){
+    const barH=isMobile?56:44;
+    const maxW=vw-(isMobile?4:16);
+    const maxH=vh-barH-(isMobile?4:16);
     const s=Math.min(1,maxW/cw,maxH/ch);
     canvasScale=s;
     const sw=Math.floor(cw*s),sh=Math.floor(ch*s);
@@ -275,9 +273,9 @@ function fitCanvasToViewport(){
   }else{
     pw.style.padding='';
     if(gui){gui.style.height='';gui.style.maxHeight='';gui.style.overflow='visible';gui.style.justifyContent='center';}
-    const maxW=window.innerWidth-16;
+    const maxW=vw-(isMobile?8:16);
     const barH=inGameplay?80:0;
-    const maxH=window.innerHeight-barH-16;
+    const maxH=vh-barH-(isMobile?8:16);
     const s=Math.min(1,maxW/cw,maxH/ch);
     canvasScale=s;
     const sw=Math.floor(cw*s),sh=Math.floor(ch*s);
@@ -463,6 +461,7 @@ function applyMenuSkin(){
   const bg=s.modern?`radial-gradient(circle at 50% 0%, ${s.menuPanel} 0%, ${s.menuBg} 58%, #0b111c 100%)`:s.menuBg;
   pw.style.background=bg;pw.style.color=s.menuFg;
   document.body.style.background=bg;
+  document.documentElement.style.background=s.menuBg;
   document.body.classList.toggle('skin-modern',!!s.modern);
   document.getElementById('menu-title').style.color=s.menuFg;
   document.querySelectorAll('.btn').forEach(b=>{b.style.background=s.menuFg;b.style.color=s.menuBg;});
@@ -473,6 +472,7 @@ function applyGameSkin(){
   const s=SKINS[currentSkin];
   document.getElementById('pw').style.background=s.bg;
   document.body.style.background=s.bg;
+  document.documentElement.style.background=s.bg;
   document.getElementById('bar').style.color=s.fg;
   document.querySelectorAll('.btn-o').forEach(b=>b.style.color=s.fg);
   document.getElementById('mlabel').style.color=s.fg;
