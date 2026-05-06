@@ -32,7 +32,7 @@ function startSet(){
   document.getElementById('game-over').style.display='none';
   document.getElementById('match-over').style.display='none';
   document.getElementById('game-ui').style.display='flex';
-  document.getElementById('pbtn').textContent=paused?'Resume':'Pause';
+  setPongButton('pbtn',paused?'play':'pause',paused?'Resume':'Pause');
   const setInfo=matchFormat>1?` · Set ${currentSet}`:'';
   const modeTag=gameMode!=='classic'?` [${gameMode.toUpperCase()}]`:'';
   document.getElementById('mlabel').textContent=`${nameLeft} vs ${nameRight}${setInfo}${modeTag}`;
@@ -92,7 +92,7 @@ function showMenu(){
 
 function togglePause(){
   paused=!paused;
-  document.getElementById('pbtn').textContent=paused?'Resume':'Pause';
+  setPongButton('pbtn',paused?'play':'pause',paused?'Resume':'Pause');
   if(!paused){lastFrameTime=0;animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);}
 }
 
@@ -135,7 +135,7 @@ function endSet(winner){
     document.getElementById('wmatch').textContent=pbNote;
   }
 
-  document.getElementById('rabtn').textContent=matchOver?'Play again':(matchSets[winner]>=setsNeeded?'Play again':'Next set');
+  setPongButton('rabtn','play',matchOver?'Play again':(matchSets[winner]>=setsNeeded?'Play again':'Next set'));
   // Check achievements
   const loser=winner==='left'?'right':'left';
   checkAchievements(winner,loser,state[winner].score,state[loser].score);
@@ -313,7 +313,12 @@ function moveAI(paddle,ball,side,dt){
   // Predict trajectory when ball is heading toward this paddle; otherwise drift to center
   const heading=(side==='left'&&ball.vx<0)||(side==='right'&&ball.vx>0);
   let targetY;
-  if(heading){
+  if(serving){
+    targetY=H/2+err*0.25;
+  }else if(gameMode==='bricks'&&heading){
+    const urgency=side==='left'?ball.x<W*.45:ball.x>W*.55;
+    targetY=(urgency?ball.y+ball.size/2:H/2)+err*0.35;
+  }else if(heading){
     const padX=side==='left'?24+PW:W-24-PW;
     targetY=predictBallY(ball,padX)+err;
   }else{
@@ -354,6 +359,14 @@ function updateDecoyBall(db,dt){
 // MAIN UPDATE
 // ═══════════════════════════════════════════════════════════════════
 function update(){
+  try{return updateFrame();}
+  catch(e){
+    console.error('Pong update failed',e);
+    fitCanvasToViewport();
+    animId=requestAnimationFrame(update);
+  }
+}
+function updateFrame(){
   if(paused)return;
   const now=performance.now();
   if(!lastFrameTime)lastFrameTime=now;
@@ -620,15 +633,15 @@ function movePaddles(s,SPD,dt){
   const aiRight=tourney?tourneyAI.right:(mode==='ai');
   if(aiLeft&&aiRight){
     // Both AI — no keyboard input
-    if(!serving){moveAI(s.left,s.ball,'left',dt);moveAI(s.right,s.ball,'right',dt);}
+    moveAI(s.left,s.ball,'left',dt);moveAI(s.right,s.ball,'right',dt);
   }else if(aiRight){
     if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=leftSPD*lUp;
     if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
-    if(!serving)moveAI(s.right,s.ball,'right',dt);
+    moveAI(s.right,s.ball,'right',dt);
   }else if(aiLeft){
     if(keys['w']||keys['W']||keys['ArrowUp'])s.right.y-=rightSPD*rUp;
     if(keys['s']||keys['S']||keys['ArrowDown'])s.right.y+=rightSPD*rUp;
-    if(!serving)moveAI(s.left,s.ball,'left',dt);
+    moveAI(s.left,s.ball,'left',dt);
   }else{
     if(keys['w']||keys['W'])s.left.y-=leftSPD*lUp;if(keys['s']||keys['S'])s.left.y+=leftSPD*lUp;
     if(keys['ArrowUp'])s.right.y-=rightSPD*rUp;if(keys['ArrowDown'])s.right.y+=rightSPD*rUp;
@@ -636,4 +649,3 @@ function movePaddles(s,SPD,dt){
   if(touchY.left===null)s.left.y=Math.max(0,Math.min(H-leftPH,s.left.y));
   if(touchY.right===null)s.right.y=Math.max(0,Math.min(H-rightPH,s.right.y));
 }
-
