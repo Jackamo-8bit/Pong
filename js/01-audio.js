@@ -33,6 +33,7 @@ function playTone(freq,type,dur,vol,st,endFreq){
   if(endFreq)o.frequency.exponentialRampToValueAtTime(endFreq,st+dur);
   g.gain.setValueAtTime(vol,st);g.gain.exponentialRampToValueAtTime(0.001,st+dur);
   o.start(st);o.stop(st+dur);
+  o.onended=()=>{o.disconnect();g.disconnect();};
 }
 function playNoise(dur,vol,st){
   if(muted)return;
@@ -42,6 +43,7 @@ function playNoise(dur,vol,st){
   const g=ac.createGain();src.connect(g);g.connect(getMasterGain());
   g.gain.setValueAtTime(vol,st);g.gain.exponentialRampToValueAtTime(0.001,st+dur);
   src.start(st);src.stop(st+dur);
+  src.onended=()=>{src.disconnect();g.disconnect();};
 }
 function toggleMute(){muted=!muted;setPongButton('mutebtn','volume',muted?'Muted':'Sound');}
 function setVolume(v){

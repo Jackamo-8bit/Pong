@@ -286,7 +286,9 @@ function fitCanvasToViewport(){
     wrap.style.marginBottom='0px';
   }
 }
-window.addEventListener('resize',fitCanvasToViewport);
+let _resizeTimer=0;
+function debouncedFit(){clearTimeout(_resizeTimer);_resizeTimer=setTimeout(fitCanvasToViewport,80);}
+window.addEventListener('resize',debouncedFit);
 window.addEventListener('orientationchange',()=>setTimeout(fitCanvasToViewport,200));
 
 // ═══════════════════════════════════════════════════════════════════
