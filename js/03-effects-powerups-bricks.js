@@ -63,13 +63,83 @@ function paddleIconSVG(tall,color){
   const h=tall?32:16,w=tall?8:8,r=4;
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin:auto"><rect x="0" y="0" width="${w}" height="${h}" rx="${r}" fill="${color}"/></svg>`;
 }
+function pixelPuRects(type){
+  const alias={survslowmo:'slowmo',magnetpaddle:'magnet',multiball:'decoy'};
+  type=alias[type]||type;
+  const shapes={
+    decoy:[[3,5,4,4],[9,3,4,4],[8,10,4,4]],
+    bouncy:[[5,4,6,6],[11,2,2,2],[3,11,2,2],[11,12,2,2]],
+    lead:[[4,5,8,7],[3,13,10,2],[6,3,4,2]],
+    curve:[[7,2,5,2],[11,4,2,4],[8,8,4,2],[5,6,2,5],[4,11,7,2],[3,3,2,2]],
+    bigball:[[4,4,8,8],[3,5,10,6],[5,3,6,10]],
+    smallball:[[7,7,3,3]],
+    widepaddle:[[3,3,10,2],[3,5,10,8],[3,13,10,2]],
+    shortpaddle:[[6,5,4,6],[5,11,6,2]],
+    blackhole:[[3,6,10,4],[5,4,6,8],[7,7,2,2]],
+    slowmo:[[4,3,8,2],[5,6,6,2],[7,8,2,2],[5,11,6,2],[4,14,8,2]],
+    defender:[[7,2,3,3],[5,6,7,5],[3,9,2,4],[12,9,2,4]],
+    shield:[[4,2,8,2],[3,4,10,5],[5,9,6,3],[7,12,2,2]],
+    magnet:[[3,3,3,10],[10,3,3,10],[5,11,6,3],[5,3,2,2],[9,3,2,2]],
+    curvedpaddle:[[4,3,4,2],[7,5,3,2],[9,7,2,5],[7,12,3,2],[4,14,4,1]],
+    ghost:[[5,3,6,2],[3,5,10,7],[3,12,2,2],[7,12,2,2],[11,12,2,2]],
+    invert:[[3,5,7,2],[10,3,3,4],[6,11,7,2],[3,10,3,4]],
+    laser:[[7,1,2,10],[4,7,8,2],[9,11,2,4]],
+    freeze:[[7,2,2,12],[2,7,12,2],[4,4,2,2],[10,4,2,2],[4,10,2,2],[10,10,2,2]],
+    bomb:[[5,6,7,6],[4,8,9,3],[7,4,4,2],[11,3,3,2]],
+    fireball:[[7,2,3,5],[5,6,6,4],[4,9,8,4],[6,13,5,2]],
+    shrinkrow:[[2,5,12,2],[4,9,8,2],[6,13,4,2]],
+  };
+  return shapes[type]||[[5,3,6,2],[3,5,10,8],[5,13,6,1]];
+}
+function drawPixelPuIcon(type,cx,cy,size,color){
+  const alias={survslowmo:'slowmo',magnetpaddle:'magnet',multiball:'decoy',portal:'curve'};
+  const iconType=alias[type]||type;
+  const unit=size/16,rects=pixelPuRects(type),sk=SKINS[currentSkin];
+  ctx.save();
+  try{
+    ctx.translate(cx-size/2,cy-size/2);
+    ctx.fillStyle=color;
+    rects.forEach(([x,y,w,h])=>ctx.fillRect(Math.round(x*unit),Math.round(y*unit),Math.ceil(w*unit),Math.ceil(h*unit)));
+    if(iconType==='ghost'||iconType==='defender'||iconType==='blackhole'){
+      ctx.fillStyle=sk.modern?sk.bg:'rgba(0,0,0,.85)';
+      [[6,7,2,2],[10,7,2,2]].forEach(([x,y,w,h])=>ctx.fillRect(Math.round(x*unit),Math.round(y*unit),Math.ceil(w*unit),Math.ceil(h*unit)));
+    }
+  }finally{
+    ctx.restore();
+  }
+}
+function safeDrawPixelPuIcon(type,cx,cy,size,color){
+  try{drawPixelPuIcon(type,cx,cy,size,color);}
+  catch(e){
+    ctx.save();
+    ctx.fillStyle=color;
+    ctx.fillRect(cx-size*.28,cy-size*.28,size*.56,size*.56);
+    const sk=SKINS[currentSkin]||{};
+    ctx.fillStyle=sk.bg||'#000';
+    ctx.font=`bold ${Math.max(8,Math.floor(size*.42))}px monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(String(type||'?').charAt(0).toUpperCase(),cx,cy+1);
+    ctx.restore();
+  }
+}
+function pixelPuSVG(type,color,size){
+  return powerupIconHTML(type,color,size);
+}
+function powerupIconHTML(type,color,size){
+  const alias={survslowmo:'slowmo',magnetpaddle:'magnet',multiball:'decoy',portal:'curve'};
+  const iconType=alias[type]||type;
+  const rects=pixelPuRects(type).map(([x,y,w,h])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`).join('');
+  const cutouts=(iconType==='ghost'||iconType==='defender'||iconType==='blackhole')
+    ? '<rect x="6" y="7" width="2" height="2"/><rect x="10" y="7" width="2" height="2"/>'
+    : '';
+  return `<svg class="pu-pixel-svg" width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true"><g fill="${color}">${rects}</g><g fill="#121420">${cutouts}</g></svg>`;
+}
 function showPuPopup(side,type){
   const pu=POWER_UPS[type],sk=SKINS[currentSkin];
   const popup=document.getElementById('pu-popup'),inner=document.getElementById('pu-popup-inner');
   const iconEl=document.getElementById('pu-icon-big');
-  if(pu.icon==='_wide_'){iconEl.innerHTML=paddleIconSVG(true,pu.color);iconEl.style.fontSize='0';}
-  else if(pu.icon==='_short_'){iconEl.innerHTML=paddleIconSVG(false,pu.color);iconEl.style.fontSize='0';}
-  else{iconEl.textContent=pu.icon;iconEl.innerHTML=pu.icon;iconEl.style.fontSize='36px';}
+  iconEl.innerHTML=powerupIconHTML(type,pu.color,34);
+  iconEl.style.fontSize='0';
   document.getElementById('pu-who').textContent=playerName(side).toUpperCase();
   document.getElementById('pu-name').textContent=pu.name;document.getElementById('pu-name').style.color=pu.color;
   document.getElementById('pu-desc').textContent=pu.desc;
@@ -409,4 +479,3 @@ function drawBricks(){
     ctx.restore();
   }
 }
-

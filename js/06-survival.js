@@ -483,6 +483,7 @@ function survDraw(now){
   const sv=survState,sk=SKINS[currentSkin];
   fillCanvasBg(sk.bg);
   ctx.save();ctx.translate(MARGIN,MARGIN);
+  if(sk.modern)drawModernBg(sk,now);
 
   // Neon grid
   if(sk.neonGlow){
@@ -491,7 +492,8 @@ function survDraw(now){
     for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     ctx.globalAlpha=1;ctx.restore();
   }
-  if(sk.deco){drawDecoBg(sk);}
+  if(sk.modern){}
+  else if(sk.deco){drawDecoBg(sk);}
   else if(sk.zen){drawForestBg(sk,performance.now());}
   else if(sk.bauhaus){drawBauhausBg(sk);}
 
@@ -544,7 +546,7 @@ function survDraw(now){
 
   // Draw paddle (horizontal)
   const px=sv.paddle.x,py=H-24,pw=sv.paddle.w,ph=sv.paddle.h;
-  ctx.fillStyle=sk.fg;
+  ctx.fillStyle=sk.modern?sk.accent:sk.fg;
   if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(px,py,pw,ph,6);ctx.fill();}
   else ctx.fillRect(px,py,pw,ph);
   if(sk.neonGlow){
@@ -824,7 +826,7 @@ function survEndTurn(time){
       document.getElementById('wmatch').textContent=isPB?'New personal best!':'';
       document.getElementById('wmatch').style.color=sk.menuFg;
       ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
-      document.getElementById('rabtn').textContent='Play again';
+      setPongButton('rabtn','play','Play again');
       document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
       const badgePop=document.getElementById('badge-pop');
       if(newBadgesThisRound.length){
@@ -857,7 +859,7 @@ function survEndTurn(time){
     document.getElementById('wmatch').textContent=`${wname} survived longer!`;
     document.getElementById('wmatch').style.color=sk.menuFg;
     ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
-    document.getElementById('rabtn').textContent='Play again';
+    setPongButton('rabtn','play','Play again');
     document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
     document.getElementById('game-ui').style.display='none';
     document.getElementById('surv-turn').style.display='none';
