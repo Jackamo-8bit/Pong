@@ -43,12 +43,12 @@ function playNoise(dur,vol,st){
   g.gain.setValueAtTime(vol,st);g.gain.exponentialRampToValueAtTime(0.001,st+dur);
   src.start(st);src.stop(st+dur);
 }
-function toggleMute(){muted=!muted;document.getElementById('mutebtn').textContent=muted?'🔇':'🔊';}
+function toggleMute(){muted=!muted;setPongButton('mutebtn','volume',muted?'Muted':'Sound');}
 function setVolume(v){
   masterVolume=v/100;
   if(masterGain)masterGain.gain.value=masterVolume;
   if(v==0&&!muted)toggleMute();
-  if(v>0&&muted){muted=false;document.getElementById('mutebtn').textContent='🔊';}
+  if(v>0&&muted){muted=false;setPongButton('mutebtn','volume','Sound');}
 }
 
 // Power-up specific sounds
@@ -185,4 +185,3 @@ const SOUNDS={
 };
 // Apply haptics to all sound sets
 for(const k of Object.keys(SOUNDS))SOUNDS[k]=withHaptics(SOUNDS[k]);
-
