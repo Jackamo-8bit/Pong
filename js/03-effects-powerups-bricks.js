@@ -19,15 +19,16 @@ function spawnPuParticles(x,y){
 }
 function updateParticles(dt){
   dt=dt||1;
-  // Hard cap to prevent memory growth in long sessions
-  if(particles.length>500)particles.splice(0,particles.length-500);
-  for(let i=particles.length-1;i>=0;i--){
+  if(particles.length>500)particles.length=500;
+  let len=particles.length;
+  for(let i=len-1;i>=0;i--){
     const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;
-    p.vy+=(p.isDebris?.12:.05)*dt; // debris falls faster
+    p.vy+=(p.isDebris?.12:.05)*dt;
     if(p.isDebris&&p.rot!=null)p.rot+=p.rotSpd*dt;
     p.life-=p.decay*dt;
-    if(p.life<=0)particles.splice(i,1);
+    if(p.life<=0){particles[i]=particles[--len];}
   }
+  particles.length=len;
 }
 function drawParticles(){
   const sk=SKINS[currentSkin];

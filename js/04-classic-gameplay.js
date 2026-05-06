@@ -190,16 +190,24 @@ function showMatchOver(){
 // ═══════════════════════════════════════════════════════════════════
 // CONTROLS
 // ═══════════════════════════════════════════════════════════════════
+const _elGameUI=document.getElementById('game-ui');
+const _elGameOver=document.getElementById('game-over');
+const _elMatchOver=document.getElementById('match-over');
+const _elSurvTurn=document.getElementById('surv-turn');
+const _elVolSlider=document.getElementById('vol-slider');
+const _elScoreLive=document.getElementById('score-live');
+const _elMenu=document.getElementById('menu');
+
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
-  const inGame=document.getElementById('game-ui').style.display==='flex';
-  const overScreen=document.getElementById('game-over').style.display==='flex';
-  const matchScreen=document.getElementById('match-over').style.display==='flex';
+  const inGame=_elGameUI.style.display==='flex';
+  const overScreen=_elGameOver.style.display==='flex';
+  const matchScreen=_elMatchOver.style.display==='flex';
   if(e.key==='m'||e.key==='M')toggleMute();
   // Volume keys: +/= to increase, - to decrease
-  if(e.key==='='||e.key==='+'){const v=Math.min(100,Math.round(masterVolume*100)+10);document.getElementById('vol-slider').value=v;setVolume(v);}
-  if(e.key==='-'&&!e.ctrlKey&&!e.metaKey){const v=Math.max(0,Math.round(masterVolume*100)-10);document.getElementById('vol-slider').value=v;setVolume(v);}
-  if(e.key==='t'||e.key==='T'){if(inGame||document.getElementById('menu').style.display!=='none')toggleTestPanel();}
+  if(e.key==='='||e.key==='+'){const v=Math.min(100,Math.round(masterVolume*100)+10);_elVolSlider.value=v;setVolume(v);}
+  if(e.key==='-'&&!e.ctrlKey&&!e.metaKey){const v=Math.max(0,Math.round(masterVolume*100)-10);_elVolSlider.value=v;setVolume(v);}
+  if(e.key==='t'||e.key==='T'){if(inGame||_elMenu.style.display!=='none')toggleTestPanel();}
   if(inGame){
     if(e.key==='p'||e.key==='P'){e.preventDefault();togglePause();}
     if(serving&&e.key===' '){e.preventDefault();if(countdown===0)launchBall(serveSide);}
@@ -215,7 +223,7 @@ document.addEventListener('keydown',e=>{
   }
   if(overScreen&&e.key===' '){e.preventDefault();if(gameMode==='survival')survStartMatch(lastMode);else nextSetOrEnd();}
   if(matchScreen&&e.key===' '){e.preventDefault();startMatch(lastMode);}
-  const survScreen=document.getElementById('surv-turn').style.display==='flex';
+  const survScreen=_elSurvTurn.style.display==='flex';
   if(survScreen&&e.key===' '){e.preventDefault();survStartTurn();}
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
@@ -228,7 +236,9 @@ let touchX=null; // For survival mode horizontal paddle
 const touchIndLeft=document.getElementById('touch-ind-left');
 const touchIndRight=document.getElementById('touch-ind-right');
 
+let _touchSetup=false;
 function setupTouch(){
+  if(_touchSetup)return;_touchSetup=true;
   const wrap=document.getElementById('canvas-wrap');
   wrap.addEventListener('touchstart',e=>{e.preventDefault();handleTouch(e);},{passive:false});
   wrap.addEventListener('touchmove', e=>{e.preventDefault();handleTouch(e);},{passive:false});
@@ -358,6 +368,7 @@ function updateDecoyBall(db,dt){
 // ═══════════════════════════════════════════════════════════════════
 // MAIN UPDATE
 // ═══════════════════════════════════════════════════════════════════
+function announceScore(){if(_elScoreLive)_elScoreLive.textContent=`${nameLeft} ${state.left.score}, ${nameRight} ${state.right.score}`;}
 function update(){
   try{return updateFrame();}
   catch(e){
@@ -404,14 +415,17 @@ function updateFrame(){
   for(let i=activePowerups.length-1;i>=0;i--){
     if(now>=activePowerups[i].endTime){clearSinglePU(activePowerups[i]);activePowerups.splice(i,1);}
   }
+  // Cache power-up lookups for this frame
+  const _puCurve=hasAPU('curve'),_puLead=hasAPU('lead'),_puBouncy=hasAPU('bouncy');
+  const _puDecoy=hasAPU('decoy'),_puPortal=hasAPU('portal'),_puGhost=hasAPU('ghost'),_puFreeze=hasAPU('freeze');
+  const magnetPU=getAPU('magnet'),cpPU=getAPU('curvedpaddle');
+
   let BS=getBallSize();
   if(gameMode==='chaos'&&Math.random()<.003)BS=Math.max(6,Math.min(22,BS+(Math.random()*6-3)));
   s.ball.size=BS;
   // Apply ongoing power-up effects
-  if(hasAPU('curve')){s.ball.curve=(s.ball.curve||0)+.07*dt;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12*dt;}
-  if(hasAPU('lead')){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){const ld=Math.pow(.995,dt);s.ball.vx*=ld;s.ball.vy*=ld;}}
-  // Magnet: pull ball toward holder's paddle only when ball is returning to their side
-  const magnetPU=getAPU('magnet');
+  if(_puCurve){s.ball.curve=(s.ball.curve||0)+.07*dt;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12*dt;}
+  if(_puLead){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){const ld=Math.pow(.995,dt);s.ball.vx*=ld;s.ball.vy*=ld;}}
   if(magnetPU){
     const mSide=magnetPU.side;
     const returning=(mSide==='left'&&s.ball.vx<0)||(mSide==='right'&&s.ball.vx>0);
@@ -433,7 +447,7 @@ function updateFrame(){
   if(ballTrail.length>12)ballTrail.shift();
 
   // Wall bounces
-  const bm=hasAPU('bouncy')?1.08:1;
+  const bm=_puBouncy?1.08:1;
   if(s.ball.y<=0){s.ball.y=0;s.ball.vy=Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
   if(s.ball.y+BS>=H){s.ball.y=H-BS;s.ball.vy=-Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
 
@@ -441,7 +455,6 @@ function updateFrame(){
   const LP=24,RP=W-24-PW,leftPH=getPH('left'),rightPH=getPH('right');
   const prevBX=s.ball.x-s.ball.vx*dt; // previous frame x position
   // Curved paddle: opponent's paddle gets a curved arc surface
-  const cpPU=getAPU('curvedpaddle');
   const curvedL=cpPU&&cpPU.side!=='left';
   const curvedR=cpPU&&cpPU.side!=='right';
 
@@ -463,7 +476,7 @@ function updateFrame(){
       s.ball.vx=Math.abs(nx)*spd;if(s.ball.vx<spd*0.2)s.ball.vx=spd*0.2;
       s.ball.vy=ny*spd;
       s.ball.spin=ny*0.25;
-      if(hasAPU('curve'))s.ball.curve=0;
+      if(_puCurve)s.ball.curve=0;
       spawnParticles(s.ball.x,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
       lastBrickToucher='left';
       checkFieldPuCollect('left',now);
@@ -485,7 +498,7 @@ function updateFrame(){
       s.ball.vx=-Math.abs(nx)*spd;if(s.ball.vx>-spd*0.2)s.ball.vx=-spd*0.2;
       s.ball.vy=ny*spd;
       s.ball.spin=ny*0.25;
-      if(hasAPU('curve'))s.ball.curve=0;
+      if(_puCurve)s.ball.curve=0;
       spawnParticles(s.ball.x+BS,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
       lastBrickToucher='right';
       checkFieldPuCollect('right',now);
@@ -502,7 +515,7 @@ function updateFrame(){
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
-    if(hasAPU('curve'))s.ball.curve=0;
+    if(_puCurve)s.ball.curve=0;
     spawnParticles(LP+PW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     lastBrickToucher='left';
     checkFieldPuCollect('left',now);
@@ -517,7 +530,7 @@ function updateFrame(){
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=-Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
-    if(hasAPU('curve'))s.ball.curve=0;
+    if(_puCurve)s.ball.curve=0;
     spawnParticles(RP,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     lastBrickToucher='right';
     checkFieldPuCollect('right',now);
@@ -540,7 +553,7 @@ function updateFrame(){
   if(fieldPowerups.length<maxField&&now>=nextPuSpawn)spawnFieldPowerup(now);
 
   // Portal teleport
-  if(hasAPU('portal')&&portalA&&portalB){
+  if(_puPortal&&portalA&&portalB){
     const portalR=22,bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
     const daA=Math.sqrt((bcx-portalA.x)**2+(bcy-portalA.y)**2);
     const daB=Math.sqrt((bcx-portalB.x)**2+(bcy-portalB.y)**2);
@@ -575,13 +588,10 @@ function updateFrame(){
 
   // Brick collisions
   if(gameMode==='bricks'){
-    if(!hasAPU('freeze'))brickMovePhase+=0.008*dt;
+    if(!_puFreeze)brickMovePhase+=0.008*dt;
     checkBrickCollision(s.ball,BS);
     if(bricks.every(b=>!b.alive||b.btype==='indestructible'))buildBricks();
   }
-
-  // Announce score to screen readers
-  function announceScore(){const el=document.getElementById('score-live');if(el)el.textContent=`${nameLeft} ${s.left.score}, ${nameRight} ${s.right.score}`;}
 
   // Scoring (with shield save)
   if(s.ball.x<0){
@@ -611,7 +621,7 @@ function updateFrame(){
     }
   }
 
-  if(hasAPU('decoy'))decoyBalls=decoyBalls.filter(db=>updateDecoyBall(db,dt));
+  if(_puDecoy){let died=false;for(let i=decoyBalls.length-1;i>=0;i--){if(!updateDecoyBall(decoyBalls[i],dt)){decoyBalls[i]=decoyBalls[decoyBalls.length-1];decoyBalls.pop();died=true;}}}
   if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8*dt)%360;
   updateParticles(dt);shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.6*dt);
   _drawDt=dt;draw(now);animId=requestAnimationFrame(update);

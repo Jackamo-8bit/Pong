@@ -427,8 +427,7 @@ function draw(now){
   ctx.save();ctx.translate(MARGIN,MARGIN);
   if(sk.modern)drawModernBg(sk,now);
 
-  // Subtle zoom at high rallies — centered on ball
-  if(rallyHits>=10&&!serving){
+  if(rallyHits>=10&&!serving&&!prefersReducedMotion){
     const zoomAmt=Math.min((rallyHits-9)*0.008,0.08);
     const bx=s.ball.x+s.ball.size/2,by=s.ball.y+s.ball.size/2;
     ctx.translate(bx,by);ctx.scale(1+zoomAmt,1+zoomAmt);ctx.translate(-bx,-by);
