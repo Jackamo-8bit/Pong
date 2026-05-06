@@ -252,26 +252,32 @@ function fitCanvasToViewport(){
   const gui=document.getElementById('game-ui');
   const pw=document.getElementById('pw');
   const cw=W+MARGIN*2,ch=H+MARGIN*2;
-  const small=window.innerWidth<1024&&window.innerHeight<600;
-  // In gameplay on small screens, shrink padding and constrain to viewport
-  if(inGameplay&&small){
-    pw.style.padding='0';
-    gui.style.height='100vh';gui.style.maxHeight='100vh';
-    gui.style.overflow='hidden';gui.style.justifyContent='center';
-    const barH=44; // bar height + gap estimate
-    const maxW=window.innerWidth-8;
-    const maxH=window.innerHeight-barH-8;
+  const vw=window.innerWidth,vh=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  const isMobile=vw<760;
+
+  if(inGameplay){
+    const barH=isMobile?56:44;
+    const maxW=vw-(isMobile?4:16);
+    const maxH=vh-barH-(isMobile?4:16);
     const s=Math.min(1,maxW/cw,maxH/ch);
     canvasScale=s;
     wrap.style.width=cw+'px';wrap.style.height=ch+'px';
     wrap.style.transform=s<1?`scale(${s})`:'';
     wrap.style.transformOrigin='top center';
     wrap.style.marginBottom=s<1?`${-(ch-Math.floor(ch*s))}px`:'0px';
+    if(isMobile){
+      pw.style.padding='0';
+      gui.style.height=vh+'px';gui.style.maxHeight=vh+'px';
+      gui.style.overflow='hidden';gui.style.justifyContent='center';
+    }else{
+      pw.style.padding='';
+      gui.style.height='';gui.style.maxHeight='';gui.style.overflow='';gui.style.justifyContent='';
+    }
   }else{
     pw.style.padding='';
     if(gui){gui.style.height='';gui.style.maxHeight='';gui.style.overflow='';gui.style.justifyContent='';}
-    const maxW=window.innerWidth-16;
-    const maxH=window.innerHeight-16;
+    const maxW=vw-(isMobile?8:16);
+    const maxH=vh-(isMobile?8:16);
     const s=Math.min(1,maxW/cw,maxH/ch);
     canvasScale=s;
     wrap.style.width=cw+'px';wrap.style.height=ch+'px';
@@ -423,6 +429,7 @@ function applyMenuSkin(){
   const s=SKINS[currentSkin],pw=document.getElementById('pw');
   pw.style.background=s.menuBg;pw.style.color=s.menuFg;
   document.body.style.background=s.menuBg;
+  document.documentElement.style.background=s.menuBg;
   document.getElementById('menu-title').style.color=s.menuFg;
   document.querySelectorAll('.btn').forEach(b=>{b.style.background=s.menuFg;b.style.color=s.menuBg;});
   document.querySelectorAll('.opt-btn').forEach(b=>{b.style.borderColor=s.menuFg;b.style.color=s.menuFg;b.style.setProperty('--menu-bg',s.menuBg);b.style.setProperty('--menu-fg',s.menuFg);});
@@ -432,6 +439,7 @@ function applyGameSkin(){
   const s=SKINS[currentSkin];
   document.getElementById('pw').style.background=s.bg;
   document.body.style.background=s.bg;
+  document.documentElement.style.background=s.bg;
   document.getElementById('bar').style.color=s.fg;
   document.querySelectorAll('.btn-o').forEach(b=>b.style.color=s.fg);
   document.getElementById('mlabel').style.color=s.fg;
