@@ -7,29 +7,31 @@ let _guestAnimId=null,_lastStateSend=0;
 const STATE_SEND_INTERVAL=33; // ~30 Hz
 
 // ICE servers for NAT traversal
-// STUN: discovers public IP (free, no credentials needed)
-// TURN: relays traffic when direct connection impossible
+// STUN only works ~60% of the time across different networks
+// TURN relay is needed when both players are behind strict NATs
 let ICE_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun.relay.metered.ca:80'},
-  // Open Relay TURN servers (free community relay by Metered.ca)
-  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:80?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turns:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+  {urls:'stun:stun.relay.metered.ca:80'}
 ];
 
-// Metered.ca free API: if an API key is set, fetch fresh TURN credentials
-// To get a free key: https://www.metered.ca/stun-turn → sign up → copy API key
-let _meteredApiKey='';
+// Metered.ca TURN: free 50GB/month, fetches fresh credentials via API
+// Saved in localStorage so user only needs to set it up once
+let _meteredApp=localStorage.getItem('pong-turn-app')||'';
+let _meteredApiKey=localStorage.getItem('pong-turn-key')||'';
+let _turnReady=false;
+
 async function _fetchTurnCreds(){
-  if(!_meteredApiKey)return;
+  if(!_meteredApiKey||!_meteredApp){_turnReady=false;return false;}
   try{
-    const r=await fetch('https://pong.metered.live/api/v1/turn/credentials?apiKey='+_meteredApiKey);
-    if(!r.ok)return;
+    const url='https://'+encodeURIComponent(_meteredApp)+'.metered.live/api/v1/turn/credentials?apiKey='+encodeURIComponent(_meteredApiKey);
+    const r=await fetch(url);
+    if(!r.ok){
+      console.warn('[Online] TURN API returned',r.status);
+      _turnReady=false;return false;
+    }
     const creds=await r.json();
-    // Merge fetched TURN servers with our STUN servers
+    if(!Array.isArray(creds)||creds.length===0){_turnReady=false;return false;}
     ICE_SERVERS=[
       {urls:'stun:stun.l.google.com:19302'},
       {urls:'stun:stun1.l.google.com:19302'},
@@ -37,12 +39,29 @@ async function _fetchTurnCreds(){
       ...creds
     ];
     PEER_CONFIG.config.iceServers=ICE_SERVERS;
+    _turnReady=true;
     console.log('[Online] Fetched',creds.length,'TURN servers from Metered.ca');
-  }catch(e){console.warn('[Online] Could not fetch TURN creds:',e);}
+    return true;
+  }catch(e){
+    console.warn('[Online] Could not fetch TURN creds:',e);
+    _turnReady=false;return false;
+  }
+}
+
+function _saveTurnConfig(app,key){
+  _meteredApp=(app||'').trim();
+  _meteredApiKey=(key||'').trim();
+  if(_meteredApp&&_meteredApiKey){
+    localStorage.setItem('pong-turn-app',_meteredApp);
+    localStorage.setItem('pong-turn-key',_meteredApiKey);
+  }else{
+    localStorage.removeItem('pong-turn-app');
+    localStorage.removeItem('pong-turn-key');
+  }
 }
 
 let PEER_CONFIG={
-  debug:1, // 0=none 1=errors 2=warnings 3=all
+  debug:1,
   config:{iceServers:ICE_SERVERS}
 };
 
@@ -72,24 +91,66 @@ function _olShowSub(sub){
 }
 
 function showOnlineLobby(){
-  _fetchTurnCreds(); // attempt to get fresh TURN credentials if API key is set
   _olCache();
   ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('game-ui').style.display='none';
   _olEl['online-lobby'].style.display='flex';
-  _olShowSub('online-choice');
+  onlineShowChoice();
   const sk=SKINS[currentSkin];
   _olEl['online-lobby'].style.color=sk.menuFg;
   applyMenuSkin();
 }
 
-function onlineShowChoice(){
+async function onlineShowChoice(){
   // Clean up any previous connection attempt
   if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
   onlineConn=null;onlineRole=null;
   if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
   if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
   _olShowSub('online-choice');
+  _updateTurnUI();
+  // Auto-fetch TURN credentials if key exists
+  if(_meteredApiKey){
+    await _fetchTurnCreds();
+    _updateTurnUI();
+  }
+}
+
+function _updateTurnUI(){
+  const el=document.getElementById('online-turn-status');
+  const appInp=document.getElementById('online-turn-app');
+  const keyInp=document.getElementById('online-turn-key');
+  const setupEl=document.getElementById('online-turn-setup');
+  if(!el)return;
+  if(appInp&&_meteredApp)appInp.value=_meteredApp;
+  if(keyInp&&_meteredApiKey)keyInp.value='••••'+_meteredApiKey.slice(-4);
+  if(_meteredApiKey&&_meteredApp&&_turnReady){
+    el.textContent='✓ relay server ready';
+    el.style.color='#6c8';
+    if(setupEl)setupEl.style.display='none';
+  }else if((_meteredApiKey||_meteredApp)&&!_turnReady){
+    el.textContent='✗ could not verify — check app name & key';
+    el.style.color='#e66';
+    if(setupEl)setupEl.style.display='';
+  }else{
+    el.textContent='⚠ relay server needed for online play';
+    el.style.color='#eb4';
+    if(setupEl)setupEl.style.display='';
+  }
+}
+
+async function onlineSaveTurnKey(){
+  const appInp=document.getElementById('online-turn-app');
+  const keyInp=document.getElementById('online-turn-key');
+  if(!appInp||!keyInp)return;
+  const app=appInp.value.trim();
+  const key=keyInp.value.trim();
+  if(!app||!key||key.startsWith('••')){return;}
+  _saveTurnConfig(app,key);
+  const el=document.getElementById('online-turn-status');
+  if(el){el.textContent='verifying...';el.style.color='#aaa';}
+  await _fetchTurnCreds();
+  _updateTurnUI();
 }
 function onlineShowJoin(){
   _olShowSub('online-joining');
