@@ -6,16 +6,16 @@ let onlineRoomCode='',onlineRTT=0,_onlinePingInterval=null;
 let _guestAnimId=null,_lastStateSend=0;
 const STATE_SEND_INTERVAL=16; // ~60 Hz (small JSON, worth the smoothness)
 
-// ── Interpolation state ──
-// Instead of snapping to network positions, we lerp toward them each frame.
-// This turns 60Hz network updates into buttery-smooth 60fps rendering.
-const LERP_SPEED=0.35; // per-frame blend factor (0=frozen, 1=snap)
-const BALL_LERP=0.45;  // ball blends faster to stay accurate
-let _netTargets={       // latest positions received from network
-  leftY:null,           // host paddle Y (used by guest)
-  rightY:null,          // guest paddle Y (used by host)
-  ballX:null,ballY:null,// ball position (used by guest)
-  ballVX:0,ballVY:0    // ball velocity for extrapolation (guest)
+// ── Interpolation / client-side prediction ──
+// Guest runs its own ball movement every frame using velocity from the host,
+// then gently corrects toward the host's authoritative position each snapshot.
+// This gives 60fps smooth motion instead of choppy network-rate updates.
+const PADDLE_LERP=0.35; // per-frame blend for opponent paddle
+const BALL_CORRECT=0.3; // how aggressively to snap toward server ball pos
+let _netTargets={
+  leftY:null,           // host paddle Y (guest uses this)
+  rightY:null,          // guest paddle Y (host uses this)
+  ballX:null,ballY:null // last authoritative ball pos from host
 };
 
 // ICE servers for NAT traversal
@@ -586,25 +586,31 @@ function _playRemoteSound(name,args){
 function guestApplyState(data){
   if(!state)return;
 
-  // Store network targets for interpolation (paddle + ball)
+  // Paddle target for interpolation
   _netTargets.leftY=data.left.y;
-  _netTargets.ballX=data.ball.x;_netTargets.ballY=data.ball.y;
-  _netTargets.ballVX=data.ball.vx;_netTargets.ballVY=data.ball.vy;
 
-  // Scores snap immediately (no point interpolating numbers)
+  // Scores snap immediately
   state.left.score=data.left.score;
   state.right.score=data.right.score;
 
-  // Ball properties that don't need interpolation
+  // Always update velocity — guest uses this to extrapolate ball every frame
   state.ball.vx=data.ball.vx;state.ball.vy=data.ball.vy;
   state.ball.size=data.ball.size;state.ball.curve=data.ball.curve;state.ball.spin=data.ball.spin;
 
-  // On first snapshot or when serving, snap ball instantly (no lerp on teleport)
-  if(_netTargets._firstBall===undefined||data.serving){
-    state.left.y=data.left.y;
+  // Ball position: blend current (predicted) position toward host's authoritative position.
+  // On serve or first update, snap instantly; during play, correct gradually
+  // so the ball doesn't teleport but stays in sync.
+  if(!_netTargets._started||data.serving){
+    // Snap — ball just appeared or is resetting
     state.ball.x=data.ball.x;state.ball.y=data.ball.y;
-    _netTargets._firstBall=true;
+    state.left.y=data.left.y;
+    _netTargets._started=true;
+  }else{
+    // Correct predicted position toward server truth
+    state.ball.x+=(data.ball.x-state.ball.x)*BALL_CORRECT;
+    state.ball.y+=(data.ball.y-state.ball.y)*BALL_CORRECT;
   }
+  _netTargets.ballX=data.ball.x;_netTargets.ballY=data.ball.y;
 
   serving=data.serving;serveSide=data.serveSide;countdown=data.countdown;
   rallyHits=data.rh;shakeAmt=data.sa;chaosHue=data.ch;
@@ -640,18 +646,20 @@ function guestRenderLoop(){
       state.right.y=Math.max(0,Math.min(H-ph,state.right.y));
     }
 
-    // ── Opponent paddle: interpolate toward network target ──
+    // ── Opponent paddle: smooth lerp toward network target ──
     if(_netTargets.leftY!==null){
-      state.left.y+=((_netTargets.leftY)-state.left.y)*LERP_SPEED*dt;
+      state.left.y+=(_netTargets.leftY-state.left.y)*PADDLE_LERP*dt;
     }
 
-    // ── Ball: interpolate + extrapolate between updates ──
-    if(!serving&&_netTargets.ballX!==null){
-      // Extrapolate ball forward using velocity (covers the gap between updates)
-      const extX=_netTargets.ballX+_netTargets.ballVX*dt*0.5;
-      const extY=_netTargets.ballY+_netTargets.ballVY*dt*0.5;
-      state.ball.x+=(extX-state.ball.x)*BALL_LERP*dt;
-      state.ball.y+=(extY-state.ball.y)*BALL_LERP*dt;
+    // ── Ball: client-side prediction ──
+    // Move ball forward every frame using host velocity — this is the key
+    // to smooth motion. The host corrects our position each snapshot (in
+    // guestApplyState) so we stay in sync without the ball looking choppy.
+    if(!serving){
+      state.ball.x+=state.ball.vx*dt;
+      state.ball.y+=state.ball.vy*dt;
+      // Simple wall bounce so ball doesn't fly off screen between corrections
+      if(state.ball.y<=0||state.ball.y>=H){state.ball.vy*=-1;state.ball.y=Math.max(0,Math.min(H,state.ball.y));}
     }
 
     if(onlineConn&&onlineConn.open){
@@ -719,8 +727,7 @@ function onlineCleanup(){
   _lastBricksAlive=-1;_lastStateSend=0;_guestLastFrame=0;
   _netTargets.leftY=null;_netTargets.rightY=null;
   _netTargets.ballX=null;_netTargets.ballY=null;
-  _netTargets.ballVX=0;_netTargets.ballVY=0;
-  delete _netTargets._firstBall;
+  delete _netTargets._started;
   const lobby=document.getElementById('online-lobby');
   if(lobby)lobby.style.display='none';
   const disc=document.getElementById('online-disconnect');
