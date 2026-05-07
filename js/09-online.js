@@ -276,7 +276,11 @@ function _monitorICE(conn,statusElId){
     const turnN=ICE_SERVERS.filter(s=>(s.urls||'').startsWith('turn')).length;
     console.log('[Online] ICE started, servers:',ICE_SERVERS.length,'TURN:',turnN);
     if(el)el.textContent='③ negotiating... ('+turnN+' relay servers)';
-    pc.oniceconnectionstatechange=()=>{
+    // IMPORTANT: use addEventListener, NOT property assignment!
+    // PeerJS uses pc.onicecandidate internally to relay candidates to the
+    // remote peer via the signaling server.  Overwriting it with "=" would
+    // silently break candidate exchange → ICE always fails.
+    pc.addEventListener('iceconnectionstatechange',()=>{
       const s=pc.iceConnectionState;
       const info='h:'+ct.host+' s:'+ct.srflx+' r:'+ct.relay;
       console.log('[Online] ICE:',s,info);
@@ -286,13 +290,13 @@ function _monitorICE(conn,statusElId){
         else if(s==='disconnected')el.textContent='✗ disconnected ('+info+')';
         else if(s==='failed')el.textContent=ct.relay===0?'✗ no relay candidates ('+info+')':'✗ all routes failed ('+info+')';
       }
-    };
-    pc.onicegatheringstatechange=()=>{
+    });
+    pc.addEventListener('icegatheringstatechange',()=>{
       console.log('[Online] gathering:',pc.iceGatheringState,'h:'+ct.host,'s:'+ct.srflx,'r:'+ct.relay);
-    };
-    pc.onicecandidate=e=>{
+    });
+    pc.addEventListener('icecandidate',e=>{
       if(e.candidate&&e.candidate.type)ct[e.candidate.type]=(ct[e.candidate.type]||0)+1;
-    };
+    });
   },100);
   setTimeout(()=>clearInterval(check),30000);
 }
