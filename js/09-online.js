@@ -16,16 +16,26 @@ let ICE_SERVERS=[
 ];
 
 // Metered.ca TURN: free 50GB/month, fetches fresh credentials via API
-// Saved in localStorage so user only needs to set it up once
-let _meteredApp=localStorage.getItem('pong-turn-app')||'';
-let _meteredApiKey=localStorage.getItem('pong-turn-key')||'';
+// Saved in localStorage so user only sets up once
+let _turnApp=localStorage.getItem('pong-turn-app')||'';
+let _turnKey=localStorage.getItem('pong-turn-key')||'';
 let _turnReady=false;
 
+function _cleanAppName(raw){
+  // Accept "myapp" or "myapp.metered.live" — extract just the app name
+  return(raw||'').trim().replace(/\.metered\.live$/i,'').replace(/^https?:\/\//,'');
+}
+
 async function _fetchTurnCreds(){
-  if(!_meteredApiKey||!_meteredApp){_turnReady=false;return false;}
+  if(!_turnApp||!_turnKey){_turnReady=false;return false;}
   try{
-    const url='https://'+encodeURIComponent(_meteredApp)+'.metered.live/api/v1/turn/credentials?apiKey='+encodeURIComponent(_meteredApiKey);
+    const url='https://'+_turnApp+'.metered.live/api/v1/turn/credentials?apiKey='+encodeURIComponent(_turnKey);
+    console.log('[Online] Fetching TURN from',_turnApp+'.metered.live');
     const r=await fetch(url);
+    if(r.status===401){
+      console.warn('[Online] TURN API: invalid API key (401)');
+      _turnReady=false;return false;
+    }
     if(!r.ok){
       console.warn('[Online] TURN API returned',r.status);
       _turnReady=false;return false;
@@ -40,7 +50,7 @@ async function _fetchTurnCreds(){
     ];
     PEER_CONFIG.config.iceServers=ICE_SERVERS;
     _turnReady=true;
-    console.log('[Online] Fetched',creds.length,'TURN servers from Metered.ca');
+    console.log('[Online] Got',creds.length,'TURN servers');
     return true;
   }catch(e){
     console.warn('[Online] Could not fetch TURN creds:',e);
@@ -49,11 +59,11 @@ async function _fetchTurnCreds(){
 }
 
 function _saveTurnConfig(app,key){
-  _meteredApp=(app||'').trim();
-  _meteredApiKey=(key||'').trim();
-  if(_meteredApp&&_meteredApiKey){
-    localStorage.setItem('pong-turn-app',_meteredApp);
-    localStorage.setItem('pong-turn-key',_meteredApiKey);
+  _turnApp=_cleanAppName(app);
+  _turnKey=(key||'').trim();
+  if(_turnApp&&_turnKey){
+    localStorage.setItem('pong-turn-app',_turnApp);
+    localStorage.setItem('pong-turn-key',_turnKey);
   }else{
     localStorage.removeItem('pong-turn-app');
     localStorage.removeItem('pong-turn-key');
@@ -109,8 +119,9 @@ async function onlineShowChoice(){
   if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
   _olShowSub('online-choice');
   _updateTurnUI();
-  // Auto-fetch TURN credentials if key exists
-  if(_meteredApiKey){
+  if(_turnApp&&_turnKey){
+    const el=document.getElementById('online-turn-status');
+    if(el){el.textContent='verifying relay...';el.style.color='#aaa';}
     await _fetchTurnCreds();
     _updateTurnUI();
   }
@@ -118,18 +129,14 @@ async function onlineShowChoice(){
 
 function _updateTurnUI(){
   const el=document.getElementById('online-turn-status');
-  const appInp=document.getElementById('online-turn-app');
-  const keyInp=document.getElementById('online-turn-key');
   const setupEl=document.getElementById('online-turn-setup');
   if(!el)return;
-  if(appInp&&_meteredApp)appInp.value=_meteredApp;
-  if(keyInp&&_meteredApiKey)keyInp.value='••••'+_meteredApiKey.slice(-4);
-  if(_meteredApiKey&&_meteredApp&&_turnReady){
+  if(_turnReady){
     el.textContent='✓ relay server ready';
     el.style.color='#6c8';
     if(setupEl)setupEl.style.display='none';
-  }else if((_meteredApiKey||_meteredApp)&&!_turnReady){
-    el.textContent='✗ could not verify — check app name & key';
+  }else if(_turnApp&&_turnKey){
+    el.textContent='✗ invalid API key — copy the key from your Metered.ca dashboard';
     el.style.color='#e66';
     if(setupEl)setupEl.style.display='';
   }else{
@@ -137,6 +144,11 @@ function _updateTurnUI(){
     el.style.color='#eb4';
     if(setupEl)setupEl.style.display='';
   }
+  // Show current values
+  const appInp=document.getElementById('online-turn-app');
+  const keyInp=document.getElementById('online-turn-key');
+  if(appInp)appInp.value=_turnApp||'';
+  if(keyInp)keyInp.value=_turnKey?'••••'+_turnKey.slice(-4):'';
 }
 
 async function onlineSaveTurnKey(){
@@ -145,7 +157,7 @@ async function onlineSaveTurnKey(){
   if(!appInp||!keyInp)return;
   const app=appInp.value.trim();
   const key=keyInp.value.trim();
-  if(!app||!key||key.startsWith('••')){return;}
+  if(!app||!key||key.startsWith('••'))return;
   _saveTurnConfig(app,key);
   const el=document.getElementById('online-turn-status');
   if(el){el.textContent='verifying...';el.style.color='#aaa';}
