@@ -178,7 +178,8 @@ function onlineHost(){
   _olShowSub('online-hosting');
   onlineRoomCode=generateRoomCode();
   _olEl['online-room-code'].textContent=onlineRoomCode;
-  _olEl['online-host-status'].textContent='connecting to server...';
+  const turnCount=ICE_SERVERS.filter(s=>(s.urls||'').startsWith('turn')).length;
+  _olEl['online-host-status'].textContent='connecting... ('+ICE_SERVERS.length+' servers, '+turnCount+' TURN)';
 
   onlineRole='host';
 
@@ -266,48 +267,33 @@ function _onHostConnection(conn){
 
 // ── ICE state monitoring ──
 function _monitorICE(conn,statusElId){
-  // PeerJS exposes the RTCPeerConnection after a short delay
-  const candidateTypes={host:0,srflx:0,relay:0,prflx:0};
+  const ct={host:0,srflx:0,relay:0,prflx:0};
+  const el=statusElId==='host-status'?_olEl['online-host-status']:_olEl['online-join-status'];
   const check=setInterval(()=>{
     const pc=conn.peerConnection;
-    if(!pc){return;}
+    if(!pc)return;
     clearInterval(check);
-
-    console.log('[Online] ICE monitoring started, servers:',ICE_SERVERS.length,
-      '(TURN:',ICE_SERVERS.filter(s=>(s.urls||'').startsWith('turn')).length,')');
+    const turnN=ICE_SERVERS.filter(s=>(s.urls||'').startsWith('turn')).length;
+    console.log('[Online] ICE started, servers:',ICE_SERVERS.length,'TURN:',turnN);
+    if(el)el.textContent='③ negotiating... ('+turnN+' relay servers)';
     pc.oniceconnectionstatechange=()=>{
       const s=pc.iceConnectionState;
-      console.log('[Online] ICE state:',s,'candidates:',JSON.stringify(candidateTypes));
-      const el=statusElId==='host-status'?_olEl['online-host-status']:_olEl['online-join-status'];
-      if(s==='connected'||s==='completed'){
-        console.log('[Online] ICE connected! Candidate types used:',JSON.stringify(candidateTypes));
-      }
-      if(s==='failed'){
-        if(el){
-          if(candidateTypes.relay===0){
-            el.textContent='✗ connection blocked by NAT — no relay servers available';
-          }else{
-            el.textContent='✗ connection failed — firewall blocking all routes';
-          }
-        }
+      const info='h:'+ct.host+' s:'+ct.srflx+' r:'+ct.relay;
+      console.log('[Online] ICE:',s,info);
+      if(el){
+        if(s==='connected'||s==='completed')el.textContent='✓ linked! ('+info+')';
+        else if(s==='checking')el.textContent='③ checking... ('+info+')';
+        else if(s==='disconnected')el.textContent='✗ disconnected ('+info+')';
+        else if(s==='failed')el.textContent=ct.relay===0?'✗ no relay candidates ('+info+')':'✗ all routes failed ('+info+')';
       }
     };
     pc.onicegatheringstatechange=()=>{
-      console.log('[Online] ICE gathering:',pc.iceGatheringState,'candidates:',JSON.stringify(candidateTypes));
+      console.log('[Online] gathering:',pc.iceGatheringState,'h:'+ct.host,'s:'+ct.srflx,'r:'+ct.relay);
     };
     pc.onicecandidate=e=>{
-      if(e.candidate){
-        const c=e.candidate;
-        if(c.type)candidateTypes[c.type]=(candidateTypes[c.type]||0)+1;
-        console.log('[Online] ICE candidate:',c.type||'unknown',c.protocol||'',c.address||'',
-          c.relatedAddress?'(relay via '+c.relatedAddress+')':'');
-      }else{
-        console.log('[Online] ICE gathering complete. Types:',JSON.stringify(candidateTypes));
-      }
+      if(e.candidate&&e.candidate.type)ct[e.candidate.type]=(ct[e.candidate.type]||0)+1;
     };
   },100);
-
-  // Stop checking after 30s
   setTimeout(()=>clearInterval(check),30000);
 }
 
