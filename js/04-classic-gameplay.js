@@ -14,7 +14,9 @@ function startMatch(m){
   if(gameMode==='survival'){survStartMatch(m);return;}
   if(W!==700||H!==450)resizeCanvas(700,450);
   mode=m;lastMode=m;
-  if(!tourney){
+  if(m==='online'&&onlineRole){
+    // Names already set by online lobby handshake
+  }else if(!tourney){
     nameLeft =document.getElementById('name-left').value.trim()||'Player 1';
     nameRight=document.getElementById('name-right').value.trim()||'Player 2';
     if(m==='ai')nameRight='AI';
@@ -82,8 +84,9 @@ function resetBall(loser){
 
 function showMenu(){
   if(animId)cancelAnimationFrame(animId);
+  if(typeof onlineCleanup==='function'&&onlineRole)onlineCleanup();
   if(W!==700||H!==450)resizeCanvas(700,450);
-  ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner'].forEach(id=>document.getElementById(id).style.display=id==='menu'?'flex':'none');
+  ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner','online-lobby'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=id==='menu'?'flex':'none';});
   document.getElementById('game-ui').style.display='none';
   document.getElementById('pu-popup').classList.remove('show');
   paused=false;applyMenuSkin();buildSkinGrid();buildLeaderboard();
@@ -103,6 +106,9 @@ function endSet(winner){
   cancelAnimationFrame(animId);
   document.getElementById('pu-popup').classList.remove('show');
   exitGameplay();
+  if(onlineRole==='host'&&onlineConn&&onlineConn.open){
+    onlineConn.send({type:'setEnd',winner,ls:state.left.score,rs:state.right.score,matchSets});
+  }
   const sk=SKINS[currentSkin];
   matchSets[winner]++;
   const setsNeeded=Math.ceil(matchFormat/2);
@@ -157,6 +163,7 @@ function endSet(winner){
 }
 
 function nextSetOrEnd(){
+  if(onlineRole){onlineRematch();return;}
   const setsNeeded=Math.ceil(matchFormat/2);
   if(matchSets.left>=setsNeeded||matchSets.right>=setsNeeded||matchFormat===1){
     showMatchOver();
@@ -168,6 +175,9 @@ function nextSetOrEnd(){
 
 function showMatchOver(){
   const winner=matchSets.left>matchSets.right?'left':'right';
+  if(onlineRole==='host'&&onlineConn&&onlineConn.open){
+    onlineConn.send({type:'matchEnd',winner,matchSets});
+  }
   // Tournament hook — intercept and return to bracket
   if(tourney){
     if(tourneyOnMatchEnd(winner))return;
@@ -210,7 +220,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='t'||e.key==='T'){if(inGame||_elMenu.style.display!=='none')toggleTestPanel();}
   if(inGame){
     if(e.key==='p'||e.key==='P'){e.preventDefault();togglePause();}
-    if(serving&&e.key===' '){e.preventDefault();if(countdown===0)launchBall(serveSide);}
+    if(serving&&e.key===' '){e.preventDefault();if(countdown===0){
+      if(onlineRole==='guest'&&onlineConn){onlineConn.send({type:'serve'});}
+      else{launchBall(serveSide);}
+    }}
     // Magnet paddle release in survival mode
     if(gameMode==='survival'&&survMagnetHeld&&e.key===' '){
       e.preventDefault();
@@ -250,7 +263,10 @@ function setupTouch(){
       touchX=null;
       const ind=side==='left'?touchIndLeft:touchIndRight;
       ind.classList.remove('active');
-      if(serving&&countdown===0){launchBall(serveSide);}
+      if(serving&&countdown===0){
+        if(onlineRole==='guest'&&onlineConn){onlineConn.send({type:'serve'});}
+        else{launchBall(serveSide);}
+      }
       // Survival: release magnet on touch end
       if(survMagnetHeld&&gameMode==='survival'){
         const sv=survState;if(sv){sv.ball.vx=survMagnetHeld.vx;sv.ball.vy=survMagnetHeld.vy;survMagnetHeld=null;}
@@ -405,6 +421,7 @@ function updateFrame(){
       else playCountdownBeep(0);
     }
     movePaddles(s,SPD,dt);updateParticles(dt);drawServe(now);
+    if(onlineRole==='host'&&onlineConn)onlineSendState(now);
     animId=requestAnimationFrame(update);return;
   }
 
@@ -624,12 +641,30 @@ function updateFrame(){
   if(_puDecoy){let died=false;for(let i=decoyBalls.length-1;i>=0;i--){if(!updateDecoyBall(decoyBalls[i],dt)){decoyBalls[i]=decoyBalls[decoyBalls.length-1];decoyBalls.pop();died=true;}}}
   if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8*dt)%360;
   updateParticles(dt);shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.6*dt);
-  _drawDt=dt;draw(now);animId=requestAnimationFrame(update);
+  _drawDt=dt;draw(now);
+  if(onlineRole==='host'&&onlineConn)onlineSendState(now);
+  animId=requestAnimationFrame(update);
 }
 
 function movePaddles(s,SPD,dt){
   dt=dt||1;
   const leftPH=getPH('left'),rightPH=getPH('right');
+  // Online mode: host controls left, guest input controls right
+  if(onlineRole==='guest')return;
+  if(onlineRole==='host'){
+    const slowPU=getAPU('slowmo');
+    const leftSPD=(slowPU&&slowPU.side!=='left')?SPD*.3*dt:SPD*dt;
+    const invertPU=getAPU('invert');
+    const lUp=(invertPU&&invertPU.side!=='left')?-1:1;
+    if(touchY.left!==null){s.left.y=Math.max(0,Math.min(H-leftPH,touchY.left-leftPH/2));}
+    else{
+      if(keys['w']||keys['W']||keys['ArrowUp'])s.left.y-=leftSPD*lUp;
+      if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
+      s.left.y=Math.max(0,Math.min(H-leftPH,s.left.y));
+    }
+    if(guestPaddleY!==null){s.right.y=Math.max(0,Math.min(H-rightPH,guestPaddleY-rightPH/2));}
+    return;
+  }
   // Slowmo: opponent's paddle speed drops to 30%
   const slowPU=getAPU('slowmo');
   const leftSPD=(slowPU&&slowPU.side!=='left')?SPD*.3*dt:SPD*dt;

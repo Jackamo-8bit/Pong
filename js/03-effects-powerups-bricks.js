@@ -189,6 +189,9 @@ function activatePowerup(type,side,now){
     portalB={x:W/2+40+Math.random()*(W/2-mx-40),y:60+Math.random()*(H-120)};
   }
   showPuPopup(side,type);(PU_SOUNDS[type]||SOUNDS[currentSkin].powerup)();
+  if(typeof onlineRole!=='undefined'&&onlineRole==='host'&&typeof onlineConn!=='undefined'&&onlineConn&&onlineConn.open){
+    onlineConn.send({type:'puPopup',side,puType:type});
+  }
   spawnPuParticles(W/2,H/2);
 }
 function clearSinglePU(ap){

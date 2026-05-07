@@ -420,7 +420,8 @@ function decoratePongButtons(){
     'tourney-add-ai':`${pongIcon('bot')}<span>+ AI</span>`,
     'tourney-start-btn':`${pongIcon('play')}<span>Start Tournament</span>`,
     'tourney-play-btn':`${pongIcon('play')}<span>Play Next Match</span>`,
-    'surv-go-btn':`${pongIcon('play')}<span>Start</span>`
+    'surv-go-btn':`${pongIcon('play')}<span>Start</span>`,
+    'btnonline':`${pongIcon('multiplayer')}<span>Online</span>`
   };
   Object.entries(labels).forEach(([id,html])=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
 }
