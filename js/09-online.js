@@ -8,16 +8,40 @@ const STATE_SEND_INTERVAL=33; // ~30 Hz
 
 // ICE servers for NAT traversal
 // STUN: discovers public IP (free, no credentials needed)
-// TURN: relays traffic when direct connection impossible (needs credentials)
-const ICE_SERVERS=[
+// TURN: relays traffic when direct connection impossible
+let ICE_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun2.l.google.com:19302'},
-  {urls:'stun:stun3.l.google.com:19302'},
-  {urls:'stun:stun4.l.google.com:19302'}
+  {urls:'stun:stun.relay.metered.ca:80'},
+  // Open Relay TURN servers (free community relay by Metered.ca)
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:80?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turns:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
 ];
 
-const PEER_CONFIG={
+// Metered.ca free API: if an API key is set, fetch fresh TURN credentials
+// To get a free key: https://www.metered.ca/stun-turn → sign up → copy API key
+let _meteredApiKey='';
+async function _fetchTurnCreds(){
+  if(!_meteredApiKey)return;
+  try{
+    const r=await fetch('https://pong.metered.live/api/v1/turn/credentials?apiKey='+_meteredApiKey);
+    if(!r.ok)return;
+    const creds=await r.json();
+    // Merge fetched TURN servers with our STUN servers
+    ICE_SERVERS=[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'stun:stun.relay.metered.ca:80'},
+      ...creds
+    ];
+    PEER_CONFIG.config.iceServers=ICE_SERVERS;
+    console.log('[Online] Fetched',creds.length,'TURN servers from Metered.ca');
+  }catch(e){console.warn('[Online] Could not fetch TURN creds:',e);}
+}
+
+let PEER_CONFIG={
   debug:1, // 0=none 1=errors 2=warnings 3=all
   config:{iceServers:ICE_SERVERS}
 };
@@ -48,6 +72,7 @@ function _olShowSub(sub){
 }
 
 function showOnlineLobby(){
+  _fetchTurnCreds(); // attempt to get fresh TURN credentials if API key is set
   _olCache();
   ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('game-ui').style.display='none';
@@ -169,27 +194,42 @@ function _onHostConnection(conn){
 // ── ICE state monitoring ──
 function _monitorICE(conn,statusElId){
   // PeerJS exposes the RTCPeerConnection after a short delay
+  const candidateTypes={host:0,srflx:0,relay:0,prflx:0};
   const check=setInterval(()=>{
     const pc=conn.peerConnection;
     if(!pc){return;}
     clearInterval(check);
 
-    console.log('[Online] ICE monitoring started');
+    console.log('[Online] ICE monitoring started, servers:',ICE_SERVERS.length,
+      '(TURN:',ICE_SERVERS.filter(s=>(s.urls||'').startsWith('turn')).length,')');
     pc.oniceconnectionstatechange=()=>{
       const s=pc.iceConnectionState;
-      console.log('[Online] ICE state:',s);
+      console.log('[Online] ICE state:',s,'candidates:',JSON.stringify(candidateTypes));
+      const el=statusElId==='host-status'?_olEl['online-host-status']:_olEl['online-join-status'];
+      if(s==='connected'||s==='completed'){
+        console.log('[Online] ICE connected! Candidate types used:',JSON.stringify(candidateTypes));
+      }
       if(s==='failed'){
-        const el=statusElId==='host-status'?_olEl['online-host-status']:_olEl['online-join-status'];
-        if(el)el.textContent='✗ direct connection failed — firewall/NAT blocking';
+        if(el){
+          if(candidateTypes.relay===0){
+            el.textContent='✗ connection blocked by NAT — no relay servers available';
+          }else{
+            el.textContent='✗ connection failed — firewall blocking all routes';
+          }
+        }
       }
     };
     pc.onicegatheringstatechange=()=>{
-      console.log('[Online] ICE gathering:',pc.iceGatheringState);
+      console.log('[Online] ICE gathering:',pc.iceGatheringState,'candidates:',JSON.stringify(candidateTypes));
     };
     pc.onicecandidate=e=>{
       if(e.candidate){
         const c=e.candidate;
-        console.log('[Online] ICE candidate:',c.type,c.protocol,c.address||'');
+        if(c.type)candidateTypes[c.type]=(candidateTypes[c.type]||0)+1;
+        console.log('[Online] ICE candidate:',c.type||'unknown',c.protocol||'',c.address||'',
+          c.relatedAddress?'(relay via '+c.relatedAddress+')':'');
+      }else{
+        console.log('[Online] ICE gathering complete. Types:',JSON.stringify(candidateTypes));
       }
     };
   },100);
