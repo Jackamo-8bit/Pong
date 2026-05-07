@@ -4,7 +4,19 @@
 let onlineRole=null,onlinePeer=null,onlineConn=null,guestPaddleY=null;
 let onlineRoomCode='',onlineRTT=0,_onlinePingInterval=null;
 let _guestAnimId=null,_lastStateSend=0;
-const STATE_SEND_INTERVAL=33; // ~30 Hz
+const STATE_SEND_INTERVAL=16; // ~60 Hz (small JSON, worth the smoothness)
+
+// ── Interpolation state ──
+// Instead of snapping to network positions, we lerp toward them each frame.
+// This turns 60Hz network updates into buttery-smooth 60fps rendering.
+const LERP_SPEED=0.35; // per-frame blend factor (0=frozen, 1=snap)
+const BALL_LERP=0.45;  // ball blends faster to stay accurate
+let _netTargets={       // latest positions received from network
+  leftY:null,           // host paddle Y (used by guest)
+  rightY:null,          // guest paddle Y (used by host)
+  ballX:null,ballY:null,// ball position (used by guest)
+  ballVX:0,ballVY:0    // ball velocity for extrapolation (guest)
+};
 
 // ICE servers for NAT traversal
 // STUN only works ~60% of the time across different networks
@@ -457,7 +469,8 @@ function _onlineApplySettings(data){
 function onlineHostReceive(data){
   switch(data.type){
     case 'input':
-      guestPaddleY=data.y;
+      guestPaddleY=data.y;        // direct target for physics (authoritative)
+      _netTargets.rightY=data.y;  // smooth target for rendering
       break;
     case 'serve':
       if(serving&&countdown===0&&serveSide==='right')launchBall('right');
@@ -572,12 +585,26 @@ function _playRemoteSound(name,args){
 // ── GUEST: apply state snapshot ──
 function guestApplyState(data){
   if(!state)return;
-  state.left.y=data.left.y;
+
+  // Store network targets for interpolation (paddle + ball)
+  _netTargets.leftY=data.left.y;
+  _netTargets.ballX=data.ball.x;_netTargets.ballY=data.ball.y;
+  _netTargets.ballVX=data.ball.vx;_netTargets.ballVY=data.ball.vy;
+
+  // Scores snap immediately (no point interpolating numbers)
   state.left.score=data.left.score;
   state.right.score=data.right.score;
-  state.ball.x=data.ball.x;state.ball.y=data.ball.y;
+
+  // Ball properties that don't need interpolation
   state.ball.vx=data.ball.vx;state.ball.vy=data.ball.vy;
   state.ball.size=data.ball.size;state.ball.curve=data.ball.curve;state.ball.spin=data.ball.spin;
+
+  // On first snapshot or when serving, snap ball instantly (no lerp on teleport)
+  if(_netTargets._firstBall===undefined||data.serving){
+    state.left.y=data.left.y;
+    state.ball.x=data.ball.x;state.ball.y=data.ball.y;
+    _netTargets._firstBall=true;
+  }
 
   serving=data.serving;serveSide=data.serveSide;countdown=data.countdown;
   rallyHits=data.rh;shakeAmt=data.sa;chaosHue=data.ch;
@@ -603,6 +630,7 @@ function guestRenderLoop(){
   _guestLastFrame=now;
 
   if(state){
+    // ── Own paddle: local, instant ──
     const ph=getPH('right'),SPD=5;
     if(touchY.right!==null){
       state.right.y=Math.max(0,Math.min(H-ph,touchY.right-ph/2));
@@ -610,6 +638,20 @@ function guestRenderLoop(){
       if(keys['w']||keys['W']||keys['ArrowUp'])state.right.y-=SPD*dt;
       if(keys['s']||keys['S']||keys['ArrowDown'])state.right.y+=SPD*dt;
       state.right.y=Math.max(0,Math.min(H-ph,state.right.y));
+    }
+
+    // ── Opponent paddle: interpolate toward network target ──
+    if(_netTargets.leftY!==null){
+      state.left.y+=((_netTargets.leftY)-state.left.y)*LERP_SPEED*dt;
+    }
+
+    // ── Ball: interpolate + extrapolate between updates ──
+    if(!serving&&_netTargets.ballX!==null){
+      // Extrapolate ball forward using velocity (covers the gap between updates)
+      const extX=_netTargets.ballX+_netTargets.ballVX*dt*0.5;
+      const extY=_netTargets.ballY+_netTargets.ballVY*dt*0.5;
+      state.ball.x+=(extX-state.ball.x)*BALL_LERP*dt;
+      state.ball.y+=(extY-state.ball.y)*BALL_LERP*dt;
     }
 
     if(onlineConn&&onlineConn.open){
@@ -675,6 +717,10 @@ function onlineCleanup(){
   if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
   onlineRole=null;guestPaddleY=null;onlineRTT=0;
   _lastBricksAlive=-1;_lastStateSend=0;_guestLastFrame=0;
+  _netTargets.leftY=null;_netTargets.rightY=null;
+  _netTargets.ballX=null;_netTargets.ballY=null;
+  _netTargets.ballVX=0;_netTargets.ballVY=0;
+  delete _netTargets._firstBall;
   const lobby=document.getElementById('online-lobby');
   if(lobby)lobby.style.display='none';
   const disc=document.getElementById('online-disconnect');

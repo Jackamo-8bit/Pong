@@ -662,7 +662,12 @@ function movePaddles(s,SPD,dt){
       if(keys['s']||keys['S']||keys['ArrowDown'])s.left.y+=leftSPD*lUp;
       s.left.y=Math.max(0,Math.min(H-leftPH,s.left.y));
     }
-    if(guestPaddleY!==null){s.right.y=Math.max(0,Math.min(H-rightPH,guestPaddleY-rightPH/2));}
+    if(guestPaddleY!==null){
+      // Interpolate toward guest's reported position for smooth rendering,
+      // while keeping physics accurate (lerp catches up within 2-3 frames)
+      const targetY=Math.max(0,Math.min(H-rightPH,guestPaddleY-rightPH/2));
+      s.right.y+=(targetY-s.right.y)*0.4*dt;
+    }
     return;
   }
   // Slowmo: opponent's paddle speed drops to 30%
