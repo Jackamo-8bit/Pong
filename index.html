@@ -219,12 +219,12 @@
     <div class="sub">challenge a friend</div>
     <div id="online-turn-status" style="font-size:11px;letter-spacing:1px;"></div>
     <div id="online-turn-setup" style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;opacity:.7;max-width:340px;text-align:center;">
-      <div>free relay server needed (one-time setup):</div>
-      <div>1. sign up free at <a href="https://www.metered.ca/stun-turn" target="_blank" style="color:#8af;text-decoration:underline;">metered.ca/stun-turn</a></div>
-      <div>2. create a TURN server app, then paste details below</div>
+      <div>one-time setup (free, no credit card):</div>
+      <div>1. go to <a href="https://www.metered.ca/stun-turn" target="_blank" style="color:#8af;text-decoration:underline;">metered.ca/stun-turn</a> and sign up</div>
+      <div>2. create a TURN server → copy your <b>app name</b> and <b>API key</b></div>
       <div style="display:flex;flex-direction:column;gap:4px;width:100%;align-items:center;">
-        <input class="name-input" id="online-turn-app" placeholder="app name" style="font-size:11px;width:200px;text-align:center;">
-        <input class="name-input" id="online-turn-key" placeholder="API key" style="font-size:11px;width:200px;text-align:center;">
+        <input class="name-input" id="online-turn-app" placeholder="app name (e.g. my-pong)" style="font-size:11px;width:220px;text-align:center;">
+        <input class="name-input" id="online-turn-key" placeholder="API key" style="font-size:11px;width:220px;text-align:center;">
         <button class="btn-o" onclick="onlineSaveTurnKey()" style="font-size:10px;padding:4px 14px;">Save & Verify</button>
       </div>
     </div>
