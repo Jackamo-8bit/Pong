@@ -72,6 +72,7 @@
     <button class="btn" id="btn2p" onclick="startMatch('2p')" aria-label="Start 2 player game">2 Players</button>
     <button class="btn" id="btnai" onclick="startMatch('ai')" aria-label="Start game versus AI">vs AI</button>
     <button class="btn" id="btntourney" onclick="showTournamentSetup()" aria-label="Start tournament">Tournament</button>
+    <button class="btn" id="btnonline" onclick="showOnlineLobby()" aria-label="Play online">Online</button>
   </div>
   <div class="hint">W/S = left &nbsp;|&nbsp; arrows = right &nbsp;|&nbsp; P = pause<br>aim with W/S or ↑/↓ &nbsp;|&nbsp; space = serve</div>
 
@@ -107,6 +108,7 @@
       <button class="btn-o" id="mutebtn" onclick="toggleMute()" aria-label="Toggle mute">🔊</button>
       <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)" aria-label="Volume">
     </div>
+    <span id="online-ping" style="display:none;font-size:10px;opacity:.4;font-family:monospace;"></span>
     <button class="btn-o" onclick="showMenu()" aria-label="Return to menu">Menu</button>
   </div>
   <div id="kb-legend">W/S left · ↑/↓ right · P pause · +/− volume · space serve · aim W/S ↑↓ · T test panel</div>
@@ -209,7 +211,71 @@
   </div>
 </div>
 
+<!-- ── ONLINE LOBBY ── -->
+<div id="online-lobby" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:400px;">
+  <div class="wtitle">Play Online</div>
+
+  <div id="online-choice" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <div class="sub">challenge a friend</div>
+    <div class="row">
+      <button class="btn" id="online-host-btn" onclick="onlineHost()">Create Game</button>
+      <button class="btn" id="online-join-btn" onclick="onlineShowJoin()">Join Game</button>
+    </div>
+    <button class="btn-o" onclick="showMenu()">Back</button>
+  </div>
+
+  <div id="online-hosting" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+    <div class="sub">your room code</div>
+    <div id="online-room-code" style="font-size:36px;letter-spacing:8px;font-weight:bold;font-family:monospace;"></div>
+    <div class="sub" style="opacity:.4;">share this code with your friend</div>
+    <button class="btn-o" id="online-copy-btn" onclick="onlineCopyCode()">Copy Code</button>
+    <div class="sub" id="online-host-status">waiting for opponent...</div>
+    <button class="btn-o" onclick="onlineCancel()">Cancel</button>
+  </div>
+
+  <div id="online-joining" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+    <div class="sub">enter room code</div>
+    <input class="name-input" id="online-code-input" maxlength="6" placeholder="XXXXX" style="text-align:center;font-size:24px;letter-spacing:6px;text-transform:uppercase;width:200px;">
+    <div class="row">
+      <button class="btn" id="online-connect-btn" onclick="onlineJoin()">Connect</button>
+      <button class="btn-o" onclick="onlineShowChoice()">Back</button>
+    </div>
+    <div class="sub" id="online-join-status" style="opacity:.6;"></div>
+  </div>
+
+  <div id="online-pregame" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+    <div class="sub">connected!</div>
+    <div id="online-opponent-name" style="font-size:16px;font-family:monospace;"></div>
+    <div id="online-host-settings">
+      <div class="menu-label">MODE</div>
+      <div class="row" id="online-gamemode-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
+        <button class="opt-btn sel" data-gm="classic" onclick="onlineSetMode('classic')">Classic</button>
+        <button class="opt-btn" data-gm="chaos" onclick="onlineSetMode('chaos')">Chaos</button>
+        <button class="opt-btn" data-gm="bricks" onclick="onlineSetMode('bricks')">Bricks</button>
+      </div>
+      <div class="menu-label">FIRST TO</div>
+      <div class="row" id="online-score-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
+        <button class="opt-btn" data-score="5" onclick="onlineSetWin(5)">5</button>
+        <button class="opt-btn sel" data-score="7" onclick="onlineSetWin(7)">7</button>
+        <button class="opt-btn" data-score="10" onclick="onlineSetWin(10)">10</button>
+      </div>
+      <button class="btn" onclick="onlineStartGame()">Start Match</button>
+    </div>
+    <div id="online-guest-wait" style="display:none;">
+      <div class="sub" id="online-guest-settings-label">host is choosing settings...</div>
+    </div>
+    <button class="btn-o" onclick="onlineCancel()">Leave</button>
+  </div>
+</div>
+
 </div><!-- #pw -->
+
+<!-- ── DISCONNECT OVERLAY ── -->
+<div id="online-disconnect" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:monospace;text-align:center;">
+  <div style="font-size:18px;letter-spacing:2px;">CONNECTION LOST</div>
+  <div style="font-size:12px;opacity:.5;">your opponent disconnected</div>
+  <button class="btn" onclick="onlineDismissDisconnect()">Back to Menu</button>
+</div>
 
 <!-- ── LANDSCAPE PROMPT (mobile only, during gameplay) ── -->
 <div id="rotate-prompt" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:monospace;text-align:center;padding:24px;">
@@ -218,6 +284,7 @@
   <div style="font-size:11px;opacity:.5;max-width:260px;">landscape mode recommended for the best gameplay experience</div>
   <button class="btn" onclick="dismissRotatePrompt()" style="margin-top:8px;font-size:11px;padding:8px 20px;">PLAY IN PORTRAIT ANYWAY</button>
 </div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="js/01-audio.js"></script>
 <script src="js/02-config-and-state.js"></script>
 <script src="js/03-effects-powerups-bricks.js"></script>
@@ -226,6 +293,7 @@
 <script src="js/06-survival.js"></script>
 <script src="js/07-tournament.js"></script>
 <script src="js/08-boot-and-test.js"></script>
+<script src="js/09-online.js"></script>
 
 </body>
 </html>

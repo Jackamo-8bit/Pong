@@ -223,3 +223,10 @@ canvas{display:block;}
   #menu{padding:0.25rem 8px!important;gap:6px!important;}
 }
 @keyframes rotateNudge{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-30deg)}75%{transform:rotate(90deg)}}
+#online-lobby{font-family:monospace;text-align:center;}
+#online-lobby .wtitle{font-size:28px;letter-spacing:3px;}
+#online-lobby .sub{font-size:11px;letter-spacing:1px;opacity:.6;}
+#online-lobby .menu-label{font-size:10px;letter-spacing:2px;opacity:.5;margin-top:8px;text-align:center;}
+#online-room-code{user-select:all;cursor:pointer;}
+#online-code-input{background:transparent;}
+#online-ping{margin:0 4px;}
