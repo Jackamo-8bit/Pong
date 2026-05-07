@@ -6,21 +6,20 @@ let onlineRoomCode='',onlineRTT=0,_onlinePingInterval=null;
 let _guestAnimId=null,_lastStateSend=0;
 const STATE_SEND_INTERVAL=33; // ~30 Hz
 
-// ICE servers — STUN for NAT discovery + free TURN relays for fallback
-// Without TURN, connections fail when both players are behind symmetric NATs
+// ICE servers for NAT traversal
+// STUN: discovers public IP (free, no credentials needed)
+// TURN: relays traffic when direct connection impossible (needs credentials)
 const ICE_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
   {urls:'stun:stun2.l.google.com:19302'},
-  {urls:'stun:stun.relay.metered.ca:80'},
-  {urls:'turn:global.relay.metered.ca:80',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
-  {urls:'turn:global.relay.metered.ca:80?transport=tcp',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
-  {urls:'turn:global.relay.metered.ca:443',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
-  {urls:'turns:global.relay.metered.ca:443?transport=tcp',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'}
+  {urls:'stun:stun3.l.google.com:19302'},
+  {urls:'stun:stun4.l.google.com:19302'}
 ];
 
 const PEER_CONFIG={
-  config:{iceServers:ICE_SERVERS,iceCandidatePoolSize:10,iceTransportPolicy:'all'}
+  debug:1, // 0=none 1=errors 2=warnings 3=all
+  config:{iceServers:ICE_SERVERS}
 };
 
 // ── Room code helpers ──
@@ -59,7 +58,14 @@ function showOnlineLobby(){
   applyMenuSkin();
 }
 
-function onlineShowChoice(){_olShowSub('online-choice');}
+function onlineShowChoice(){
+  // Clean up any previous connection attempt
+  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
+  onlineConn=null;onlineRole=null;
+  if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
+  if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+  _olShowSub('online-choice');
+}
 function onlineShowJoin(){
   _olShowSub('online-joining');
   _olEl['online-join-status'].textContent='';
@@ -74,9 +80,13 @@ function onlineHost(){
   _olShowSub('online-hosting');
   onlineRoomCode=generateRoomCode();
   _olEl['online-room-code'].textContent=onlineRoomCode;
-  _olEl['online-host-status'].textContent='registering room...';
+  _olEl['online-host-status'].textContent='connecting to server...';
 
   onlineRole='host';
+
+  // Clean up any previous peer
+  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}}
+
   try{
     onlinePeer=new Peer(peerIdFromCode(onlineRoomCode),PEER_CONFIG);
   }catch(e){
@@ -84,52 +94,59 @@ function onlineHost(){
     onlineRole=null;return;
   }
 
-  // Wait for signaling server to confirm registration before showing "ready"
+  // Wait for signaling server to confirm registration
   onlinePeer.on('open',id=>{
-    console.log('[Online] Host registered as:',id);
-    _olEl['online-host-status'].textContent='waiting for opponent...';
+    console.log('[Online] Host registered:',id);
+    _olEl['online-host-status'].textContent='✓ room created — waiting for opponent...';
   });
 
   onlinePeer.on('error',err=>{
-    console.warn('[Online] Host error:',err.type,err);
+    console.warn('[Online] Host error:',err.type,err.message||err);
     if(err.type==='unavailable-id'){
-      _olEl['online-host-status'].textContent='code taken — generating new one...';
+      _olEl['online-host-status'].textContent='code taken — trying new one...';
       onlineRoomCode=generateRoomCode();
       _olEl['online-room-code'].textContent=onlineRoomCode;
       onlinePeer.destroy();
       onlinePeer=new Peer(peerIdFromCode(onlineRoomCode),PEER_CONFIG);
       onlinePeer.on('open',()=>{
-        _olEl['online-host-status'].textContent='waiting for opponent...';
+        _olEl['online-host-status'].textContent='✓ room created — waiting for opponent...';
       });
       onlinePeer.on('connection',_onHostConnection);
       onlinePeer.on('error',err2=>{
-        _olEl['online-host-status'].textContent='connection error: '+err2.type;
+        _olEl['online-host-status'].textContent='error: '+err2.type+' — try again';
       });
     }else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'||err.type==='socket-closed'){
-      _olEl['online-host-status'].textContent='server unreachable — check your connection and try again';
+      _olEl['online-host-status'].textContent='✗ server unreachable — check connection & try again';
     }else{
       _olEl['online-host-status'].textContent='error: '+err.type;
     }
   });
 
   onlinePeer.on('disconnected',()=>{
-    console.warn('[Online] Host disconnected from signaling server, attempting reconnect...');
+    console.warn('[Online] Host lost signaling server, reconnecting...');
     _olEl['online-host-status'].textContent='reconnecting to server...';
-    try{onlinePeer.reconnect();}catch(e){}
+    try{onlinePeer.reconnect();}catch(e){
+      _olEl['online-host-status'].textContent='✗ lost connection to server — try again';
+    }
   });
 
   onlinePeer.on('connection',_onHostConnection);
 }
 
 function _onHostConnection(conn){
-  console.log('[Online] Guest connected, data channel opening...');
+  console.log('[Online] Incoming connection, opening data channel...');
   if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
   onlineConn=conn;
+  _olEl['online-host-status'].textContent='opponent found — establishing link...';
+
+  // Monitor ICE state on host side
+  _monitorICE(conn,'host-status');
+
   conn.on('open',()=>{
-    console.log('[Online] Data channel open with guest');
+    console.log('[Online] Host: data channel open');
     const myName=document.getElementById('name-left').value.trim()||'Player 1';
     conn.send({type:'hello',name:myName,skin:currentSkin});
-    _olEl['online-host-status'].textContent='connected!';
+    _olEl['online-host-status'].textContent='✓ connected!';
   });
   conn.on('data',data=>{
     if(data.type==='hello'){
@@ -143,7 +160,42 @@ function _onHostConnection(conn){
     }
   });
   conn.on('close',()=>onlineDisconnected());
-  conn.on('error',e=>{console.warn('[Online] Host conn error:',e);onlineDisconnected();});
+  conn.on('error',e=>{
+    console.warn('[Online] Host data channel error:',e);
+    _olEl['online-host-status'].textContent='✗ connection failed — ask opponent to retry';
+  });
+}
+
+// ── ICE state monitoring ──
+function _monitorICE(conn,statusElId){
+  // PeerJS exposes the RTCPeerConnection after a short delay
+  const check=setInterval(()=>{
+    const pc=conn.peerConnection;
+    if(!pc){return;}
+    clearInterval(check);
+
+    console.log('[Online] ICE monitoring started');
+    pc.oniceconnectionstatechange=()=>{
+      const s=pc.iceConnectionState;
+      console.log('[Online] ICE state:',s);
+      if(s==='failed'){
+        const el=statusElId==='host-status'?_olEl['online-host-status']:_olEl['online-join-status'];
+        if(el)el.textContent='✗ direct connection failed — firewall/NAT blocking';
+      }
+    };
+    pc.onicegatheringstatechange=()=>{
+      console.log('[Online] ICE gathering:',pc.iceGatheringState);
+    };
+    pc.onicecandidate=e=>{
+      if(e.candidate){
+        const c=e.candidate;
+        console.log('[Online] ICE candidate:',c.type,c.protocol,c.address||'');
+      }
+    };
+  },100);
+
+  // Stop checking after 30s
+  setTimeout(()=>clearInterval(check),30000);
 }
 
 function onlineCopyCode(){
@@ -161,41 +213,64 @@ function onlineJoin(){
   if(code.length<4){
     _olEl['online-join-status'].textContent='enter a valid code';return;
   }
-  _olEl['online-join-status'].textContent='connecting to server...';
-  onlineRole='guest';
 
   // Clean up any previous attempt
-  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}}
+  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
   if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+  onlineConn=null;
+
+  _olEl['online-join-status'].textContent='① connecting to server...';
+  onlineRole='guest';
 
   try{
     onlinePeer=new Peer(PEER_CONFIG);
   }catch(e){
-    _olEl['online-join-status'].textContent='failed to connect — try again';
+    _olEl['online-join-status'].textContent='✗ failed to connect — try again';
     onlineRole=null;return;
   }
 
   onlinePeer.on('open',()=>{
-    console.log('[Online] Guest registered, connecting to room:',code);
-    _olEl['online-join-status'].textContent='finding room '+code+'...';
+    console.log('[Online] Guest registered, looking for room:',code);
+    _olEl['online-join-status'].textContent='② finding room '+code+'...';
 
-    onlineConn=onlinePeer.connect(peerIdFromCode(code),{reliable:true});
+    onlineConn=onlinePeer.connect(peerIdFromCode(code),{reliable:true,serialization:'json'});
 
-    // Timeout: if data channel doesn't open in 15s, the connection failed
+    // Monitor ICE state on guest side
+    _monitorICE(onlineConn,'join-status');
+
+    // Timeout: if data channel doesn't open in 25s, connection failed
     _guestConnTimeout=setTimeout(()=>{
       if(!onlineConn||!onlineConn.open){
-        console.warn('[Online] Connection timed out');
-        _olEl['online-join-status'].textContent='connection timed out — check the code and try again';
+        // Check ICE state for specific diagnosis
+        let diagnosis='connection timed out';
+        try{
+          const pc=onlineConn&&onlineConn.peerConnection;
+          if(pc){
+            const iceState=pc.iceConnectionState;
+            console.log('[Online] Timeout with ICE state:',iceState);
+            if(iceState==='checking'||iceState==='new'){
+              diagnosis='✗ could not reach opponent — both players may be behind strict firewalls (NAT)';
+            }else if(iceState==='failed'){
+              diagnosis='✗ direct connection blocked by firewall/NAT';
+            }else{
+              diagnosis='✗ connection timed out (ICE: '+iceState+')';
+            }
+          }else{
+            diagnosis='✗ connection timed out — room may not exist';
+          }
+        }catch(e){}
+        _olEl['online-join-status'].textContent=diagnosis;
+        console.warn('[Online] Guest connection timed out');
         onlineRole=null;
         if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
         onlineConn=null;
       }
-    },15000);
+    },25000);
 
     onlineConn.on('open',()=>{
-      console.log('[Online] Data channel open with host');
+      console.log('[Online] Guest: data channel open');
       if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
-      _olEl['online-join-status'].textContent='connected! exchanging info...';
+      _olEl['online-join-status'].textContent='④ connected! exchanging info...';
       const myName=document.getElementById('name-right').value.trim()||document.getElementById('name-left').value.trim()||'Player 2';
       onlineConn.send({type:'hello',name:myName});
     });
@@ -214,29 +289,29 @@ function onlineJoin(){
     });
     onlineConn.on('close',()=>onlineDisconnected());
     onlineConn.on('error',e=>{
-      console.warn('[Online] Guest conn error:',e);
+      console.warn('[Online] Guest data channel error:',e);
       if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
-      _olEl['online-join-status'].textContent='connection failed — try again';
+      _olEl['online-join-status'].textContent='✗ connection failed — check code & try again';
       onlineRole=null;
     });
   });
 
   onlinePeer.on('error',err=>{
-    console.warn('[Online] Guest peer error:',err.type,err);
+    console.warn('[Online] Guest peer error:',err.type,err.message||err);
     if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
     if(err.type==='peer-unavailable'){
-      _olEl['online-join-status'].textContent='room not found — check the code';
+      _olEl['online-join-status'].textContent='✗ room "'+code+'" not found — is the host ready?';
     }else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'||err.type==='socket-closed'){
-      _olEl['online-join-status'].textContent='server unreachable — check your connection';
+      _olEl['online-join-status'].textContent='✗ server unreachable — check your internet';
     }else{
-      _olEl['online-join-status'].textContent='error: '+err.type;
+      _olEl['online-join-status'].textContent='✗ error: '+err.type;
     }
     onlineRole=null;
     if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
   });
 
   onlinePeer.on('disconnected',()=>{
-    console.warn('[Online] Guest lost signaling, attempting reconnect...');
+    console.warn('[Online] Guest lost signaling, reconnecting...');
     try{onlinePeer.reconnect();}catch(e){}
   });
 }
@@ -397,7 +472,6 @@ function guestApplyState(data){
   state.left.y=data.left.y;
   state.left.score=data.left.score;
   state.right.score=data.right.score;
-  // Ball is authoritative from host
   state.ball.x=data.ball.x;state.ball.y=data.ball.y;
   state.ball.vx=data.ball.vx;state.ball.vy=data.ball.vy;
   state.ball.size=data.ball.size;state.ball.curve=data.ball.curve;state.ball.spin=data.ball.spin;
@@ -425,7 +499,6 @@ function guestRenderLoop(){
   const dt=Math.min((now-_guestLastFrame)/TARGET_FRAME_MS,3);
   _guestLastFrame=now;
 
-  // Client-side paddle prediction
   if(state){
     const ph=getPH('right'),SPD=5;
     if(touchY.right!==null){
@@ -436,7 +509,6 @@ function guestRenderLoop(){
       state.right.y=Math.max(0,Math.min(H-ph,state.right.y));
     }
 
-    // Send input to host
     if(onlineConn&&onlineConn.open){
       onlineConn.send({type:'input',y:state.right.y+ph/2,t:now});
     }
