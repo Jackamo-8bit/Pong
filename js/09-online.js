@@ -6,6 +6,23 @@ let onlineRoomCode='',onlineRTT=0,_onlinePingInterval=null;
 let _guestAnimId=null,_lastStateSend=0;
 const STATE_SEND_INTERVAL=33; // ~30 Hz
 
+// ICE servers — STUN for NAT discovery + free TURN relays for fallback
+// Without TURN, connections fail when both players are behind symmetric NATs
+const ICE_SERVERS=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+  {urls:'stun:stun.relay.metered.ca:80'},
+  {urls:'turn:global.relay.metered.ca:80',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
+  {urls:'turn:global.relay.metered.ca:80?transport=tcp',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
+  {urls:'turn:global.relay.metered.ca:443',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'},
+  {urls:'turns:global.relay.metered.ca:443?transport=tcp',username:'e7e5ce4e09a0fec7a64b1993',credential:'FTpnNUQ/Z3gSI9H+'}
+];
+
+const PEER_CONFIG={
+  config:{iceServers:ICE_SERVERS,iceCandidatePoolSize:10,iceTransportPolicy:'all'}
+};
+
 // ── Room code helpers ──
 function generateRoomCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -51,42 +68,65 @@ function onlineShowJoin(){
 }
 
 // ── HOST FLOW ──
+let _hostConnTimeout=null;
+
 function onlineHost(){
   _olShowSub('online-hosting');
   onlineRoomCode=generateRoomCode();
   _olEl['online-room-code'].textContent=onlineRoomCode;
-  _olEl['online-host-status'].textContent='waiting for opponent...';
+  _olEl['online-host-status'].textContent='registering room...';
 
   onlineRole='host';
   try{
-    onlinePeer=new Peer(peerIdFromCode(onlineRoomCode));
+    onlinePeer=new Peer(peerIdFromCode(onlineRoomCode),PEER_CONFIG);
   }catch(e){
     _olEl['online-host-status'].textContent='failed to create room — try again';
     onlineRole=null;return;
   }
 
+  // Wait for signaling server to confirm registration before showing "ready"
+  onlinePeer.on('open',id=>{
+    console.log('[Online] Host registered as:',id);
+    _olEl['online-host-status'].textContent='waiting for opponent...';
+  });
+
   onlinePeer.on('error',err=>{
+    console.warn('[Online] Host error:',err.type,err);
     if(err.type==='unavailable-id'){
-      _olEl['online-host-status'].textContent='code taken — try again';
+      _olEl['online-host-status'].textContent='code taken — generating new one...';
       onlineRoomCode=generateRoomCode();
       _olEl['online-room-code'].textContent=onlineRoomCode;
       onlinePeer.destroy();
-      onlinePeer=new Peer(peerIdFromCode(onlineRoomCode));
+      onlinePeer=new Peer(peerIdFromCode(onlineRoomCode),PEER_CONFIG);
+      onlinePeer.on('open',()=>{
+        _olEl['online-host-status'].textContent='waiting for opponent...';
+      });
       onlinePeer.on('connection',_onHostConnection);
       onlinePeer.on('error',err2=>{
         _olEl['online-host-status'].textContent='connection error: '+err2.type;
       });
+    }else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'||err.type==='socket-closed'){
+      _olEl['online-host-status'].textContent='server unreachable — check your connection and try again';
     }else{
       _olEl['online-host-status'].textContent='error: '+err.type;
     }
+  });
+
+  onlinePeer.on('disconnected',()=>{
+    console.warn('[Online] Host disconnected from signaling server, attempting reconnect...');
+    _olEl['online-host-status'].textContent='reconnecting to server...';
+    try{onlinePeer.reconnect();}catch(e){}
   });
 
   onlinePeer.on('connection',_onHostConnection);
 }
 
 function _onHostConnection(conn){
+  console.log('[Online] Guest connected, data channel opening...');
+  if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
   onlineConn=conn;
   conn.on('open',()=>{
+    console.log('[Online] Data channel open with guest');
     const myName=document.getElementById('name-left').value.trim()||'Player 1';
     conn.send({type:'hello',name:myName,skin:currentSkin});
     _olEl['online-host-status'].textContent='connected!';
@@ -103,7 +143,7 @@ function _onHostConnection(conn){
     }
   });
   conn.on('close',()=>onlineDisconnected());
-  conn.on('error',()=>onlineDisconnected());
+  conn.on('error',e=>{console.warn('[Online] Host conn error:',e);onlineDisconnected();});
 }
 
 function onlineCopyCode(){
@@ -114,24 +154,48 @@ function onlineCopyCode(){
 }
 
 // ── GUEST FLOW ──
+let _guestConnTimeout=null;
+
 function onlineJoin(){
   const code=(_olEl['online-code-input'].value||'').trim().toUpperCase();
   if(code.length<4){
     _olEl['online-join-status'].textContent='enter a valid code';return;
   }
-  _olEl['online-join-status'].textContent='connecting...';
+  _olEl['online-join-status'].textContent='connecting to server...';
   onlineRole='guest';
 
+  // Clean up any previous attempt
+  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}}
+  if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+
   try{
-    onlinePeer=new Peer();
+    onlinePeer=new Peer(PEER_CONFIG);
   }catch(e){
-    _olEl['online-join-status'].textContent='failed to connect';
+    _olEl['online-join-status'].textContent='failed to connect — try again';
     onlineRole=null;return;
   }
 
   onlinePeer.on('open',()=>{
+    console.log('[Online] Guest registered, connecting to room:',code);
+    _olEl['online-join-status'].textContent='finding room '+code+'...';
+
     onlineConn=onlinePeer.connect(peerIdFromCode(code),{reliable:true});
+
+    // Timeout: if data channel doesn't open in 15s, the connection failed
+    _guestConnTimeout=setTimeout(()=>{
+      if(!onlineConn||!onlineConn.open){
+        console.warn('[Online] Connection timed out');
+        _olEl['online-join-status'].textContent='connection timed out — check the code and try again';
+        onlineRole=null;
+        if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
+        onlineConn=null;
+      }
+    },15000);
+
     onlineConn.on('open',()=>{
+      console.log('[Online] Data channel open with host');
+      if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+      _olEl['online-join-status'].textContent='connected! exchanging info...';
       const myName=document.getElementById('name-right').value.trim()||document.getElementById('name-left').value.trim()||'Player 2';
       onlineConn.send({type:'hello',name:myName});
     });
@@ -149,13 +213,31 @@ function onlineJoin(){
       }
     });
     onlineConn.on('close',()=>onlineDisconnected());
-    onlineConn.on('error',()=>onlineDisconnected());
+    onlineConn.on('error',e=>{
+      console.warn('[Online] Guest conn error:',e);
+      if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+      _olEl['online-join-status'].textContent='connection failed — try again';
+      onlineRole=null;
+    });
   });
 
   onlinePeer.on('error',err=>{
-    _olEl['online-join-status'].textContent=err.type==='peer-unavailable'?'room not found':'error: '+err.type;
+    console.warn('[Online] Guest peer error:',err.type,err);
+    if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
+    if(err.type==='peer-unavailable'){
+      _olEl['online-join-status'].textContent='room not found — check the code';
+    }else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'||err.type==='socket-closed'){
+      _olEl['online-join-status'].textContent='server unreachable — check your connection';
+    }else{
+      _olEl['online-join-status'].textContent='error: '+err.type;
+    }
     onlineRole=null;
-    if(onlinePeer){onlinePeer.destroy();onlinePeer=null;}
+    if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
+  });
+
+  onlinePeer.on('disconnected',()=>{
+    console.warn('[Online] Guest lost signaling, attempting reconnect...');
+    try{onlinePeer.reconnect();}catch(e){}
   });
 }
 
@@ -411,6 +493,8 @@ function onlineDismissDisconnect(){
 // ── CLEANUP ──
 function onlineCleanup(){
   _stopPing();
+  if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
+  if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
   if(_guestAnimId){cancelAnimationFrame(_guestAnimId);_guestAnimId=null;}
   if(onlineConn){try{onlineConn.close();}catch(e){}onlineConn=null;}
   if(onlinePeer){try{onlinePeer.destroy();}catch(e){}onlinePeer=null;}
