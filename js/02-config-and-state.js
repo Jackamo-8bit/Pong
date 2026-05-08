@@ -398,7 +398,38 @@ function setDiff(d){aiDiff=d;document.querySelectorAll('#diff-opts .opt-btn').fo
 function setMatch(n){matchFormat=n;document.querySelectorAll('#match-opts .opt-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.match===n));}
 
 function pongIcon(name){
+  // Trophy and globe use inline SVG for more detailed pixel art
+  if(name==='trophy') return _svgIcon(`
+    <rect x="3" y="1" width="12" height="2" fill="currentColor"/>
+    <rect x="2" y="3" width="14" height="6" fill="currentColor"/>
+    <rect x="0" y="3" width="2" height="4" fill="currentColor"/>
+    <rect x="16" y="3" width="2" height="4" fill="currentColor"/>
+    <rect x="4" y="9" width="10" height="2" fill="currentColor"/>
+    <rect x="6" y="11" width="6" height="2" fill="currentColor"/>
+    <rect x="7" y="13" width="4" height="2" fill="currentColor"/>
+    <rect x="4" y="15" width="10" height="2" fill="currentColor"/>`);
+  if(name==='globe') return _svgIcon(`
+    <rect x="5" y="0" width="8" height="2" fill="currentColor"/>
+    <rect x="3" y="2" width="2" height="2" fill="currentColor"/>
+    <rect x="13" y="2" width="2" height="2" fill="currentColor"/>
+    <rect x="1" y="4" width="2" height="2" fill="currentColor"/>
+    <rect x="15" y="4" width="2" height="2" fill="currentColor"/>
+    <rect x="0" y="6" width="18" height="2" fill="currentColor"/>
+    <rect x="0" y="8" width="2" height="2" fill="currentColor"/>
+    <rect x="16" y="8" width="2" height="2" fill="currentColor"/>
+    <rect x="1" y="10" width="2" height="2" fill="currentColor"/>
+    <rect x="15" y="10" width="2" height="2" fill="currentColor"/>
+    <rect x="3" y="12" width="2" height="2" fill="currentColor"/>
+    <rect x="13" y="12" width="2" height="2" fill="currentColor"/>
+    <rect x="5" y="14" width="8" height="2" fill="currentColor"/>
+    <rect x="8" y="0" width="2" height="16" fill="currentColor"/>
+    <rect x="5" y="2" width="2" height="12" fill="currentColor"/>
+    <rect x="11" y="2" width="2" height="12" fill="currentColor"/>
+    <rect x="14" y="14" width="4" height="4" rx="2" fill="currentColor"/>`);
   return `<span class="pong-icon pong-icon-${name}" aria-hidden="true"></span>`;
+}
+function _svgIcon(inner){
+  return `<span class="pong-icon" aria-hidden="true" style="overflow:visible;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;color:inherit;">${inner}</svg></span>`;
 }
 function setPongButton(id,icon,label){
   const el=document.getElementById(id);if(!el)return;
@@ -409,7 +440,7 @@ function decoratePongButtons(){
   const labels={
     btn2p:`${pongIcon('multiplayer')}<span>2 Players</span>`,
     btnai:`${pongIcon('bot')}<span>vs AI</span>`,
-    btntourney:`${pongIcon('cup')}<span>Tournament</span>`,
+    btntourney:`${pongIcon('trophy')}<span>Tournament</span>`,
     pbtn:`${pongIcon('pause')}<span>Pause</span>`,
     mutebtn:`${pongIcon('volume')}<span class="sr-only">Sound</span>`,
     rabtn:`${pongIcon('play')}<span>Continue</span>`,
@@ -421,7 +452,7 @@ function decoratePongButtons(){
     'tourney-start-btn':`${pongIcon('play')}<span>Start Tournament</span>`,
     'tourney-play-btn':`${pongIcon('play')}<span>Play Next Match</span>`,
     'surv-go-btn':`${pongIcon('play')}<span>Start</span>`,
-    'btnonline':`${pongIcon('multiplayer')}<span>Online</span>`
+    'btnonline':`${pongIcon('globe')}<span>Online</span>`
   };
   Object.entries(labels).forEach(([id,html])=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
 }

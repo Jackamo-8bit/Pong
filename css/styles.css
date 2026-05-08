@@ -109,6 +109,7 @@ canvas{display:block;}
 .pong-icon-chaos::after{left:8px;top:1px;width:2px;height:2px;background:currentColor;box-shadow:0 14px 0 currentColor,-7px 7px 0 currentColor,7px 7px 0 currentColor,-5px 2px 0 currentColor,5px 2px 0 currentColor,-5px 12px 0 currentColor,5px 12px 0 currentColor;}
 .pong-icon-bricks::before{left:8px;top:3px;width:5px;height:4px;background:currentColor;box-shadow:-4px 5px 0 currentColor,2px 5px 0 currentColor,-7px 10px 0 currentColor,-1px 10px 0 currentColor,5px 10px 0 currentColor;}
 .pong-icon-bricks::after{display:none;}
+/* Trophy and globe icons use inline SVG (see pongIcon() in JS) */
 .pong-icon-survival{margin-right:2px;}
 .pong-icon-survival::before{left:3px;top:6px;width:13px;height:8px;background:currentColor;clip-path:polygon(10% 0,90% 0,100% 70%,76% 70%,76% 100%,24% 100%,24% 70%,0 70%);}
 .pong-icon-survival::after{left:6px;top:8px;width:2px;height:2px;background:#121420;box-shadow:5px 0 0 #121420,-4px -5px 0 currentColor,9px -5px 0 currentColor;}
