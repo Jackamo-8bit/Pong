@@ -461,10 +461,12 @@ function buildSkinGrid(){
 }
 function applyMenuSkin(){
   const s=SKINS[currentSkin],pw=document.getElementById('pw');
-  const bg=s.modern?`radial-gradient(circle at 50% 0%, ${s.menuPanel} 0%, ${s.menuBg} 58%, #0b111c 100%)`:s.menuBg;
+  // All skins use modern's dark background to frame the page consistently
+  const m=SKINS.modern;
+  const bg=`radial-gradient(circle at 50% 0%, ${m.menuPanel} 0%, ${m.menuBg} 58%, #0b111c 100%)`;
   pw.style.background=bg;pw.style.color=s.menuFg;
   document.body.style.background=bg;
-  document.documentElement.style.background=s.menuBg;
+  document.documentElement.style.background=m.menuBg;
   document.body.classList.toggle('skin-modern',!!s.modern);
   document.getElementById('menu-title').style.color=s.menuFg;
   document.querySelectorAll('.btn').forEach(b=>{b.style.background=s.menuFg;b.style.color=s.menuBg;});
@@ -473,9 +475,14 @@ function applyMenuSkin(){
 }
 function applyGameSkin(){
   const s=SKINS[currentSkin];
-  document.getElementById('pw').style.background=s.bg;
-  document.body.style.background=s.bg;
-  document.documentElement.style.background=s.bg;
+  // Always use modern skin's dark background outside the canvas to frame the
+  // game window nicely, regardless of which skin is active.  The canvas itself
+  // draws with s.bg internally, so in-game colours are unchanged.
+  const m=SKINS.modern;
+  const pageBg=`radial-gradient(circle at 50% 0%, ${m.menuPanel} 0%, ${m.menuBg} 58%, #0b111c 100%)`;
+  document.getElementById('pw').style.background=pageBg;
+  document.body.style.background=pageBg;
+  document.documentElement.style.background=m.menuBg;
   document.getElementById('bar').style.color=s.fg;
   document.querySelectorAll('.btn-o').forEach(b=>b.style.color=s.fg);
   document.getElementById('mlabel').style.color=s.fg;
