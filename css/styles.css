@@ -127,6 +127,7 @@ canvas{display:block;}
 #pu-desc{font-size:9px;letter-spacing:1px;opacity:.5;font-family:monospace;display:none;}
 #pu-popup-inner .pu-text{display:flex;flex-direction:column;gap:1px;}
 #canvas-wrap{position:relative;display:inline-block;touch-action:none;}
+#canvas-wrap.rounded{border-radius:12px;overflow:hidden;}
 /* touch paddle zones (invisible) */
 #touch-left,#touch-right{position:absolute;top:0;width:50%;height:100%;cursor:pointer;touch-action:none;}
 #touch-left{left:0;}#touch-right{right:0;}

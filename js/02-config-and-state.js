@@ -483,6 +483,9 @@ function applyGameSkin(){
   document.getElementById('pw').style.background=pageBg;
   document.body.style.background=pageBg;
   document.documentElement.style.background=m.menuBg;
+  // Rounded canvas corners for all skins except retro
+  const cw=document.getElementById('canvas-wrap');
+  if(cw)cw.classList.toggle('rounded',currentSkin!=='retro');
   document.getElementById('bar').style.color=s.fg;
   document.querySelectorAll('.btn-o').forEach(b=>b.style.color=s.fg);
   document.getElementById('mlabel').style.color=s.fg;

@@ -101,7 +101,7 @@ function _olCache(){
   ['online-lobby','online-choice','online-hosting','online-joining','online-pregame',
    'online-room-code','online-host-status','online-join-status','online-code-input',
    'online-host-settings','online-guest-wait','online-guest-settings-label',
-   'online-opponent-name','online-ping','online-disconnect'].forEach(id=>{
+   'online-opponent-name','online-ping','online-disconnect','online-name'].forEach(id=>{
     _olEl[id]=document.getElementById(id);
   });
 }
@@ -112,12 +112,22 @@ function _olShowSub(sub){
   });
 }
 
+function _getOnlineName(){
+  const el=_olEl['online-name']||document.getElementById('online-name');
+  const name=(el?el.value:'').trim();
+  if(name)localStorage.setItem('pong-online-name',name);
+  return name||localStorage.getItem('pong-online-name')||'';
+}
+
 function showOnlineLobby(){
   _olCache();
   ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('game-ui').style.display='none';
   _olEl['online-lobby'].style.display='flex';
   onlineShowChoice();
+  // Restore saved name
+  const savedName=localStorage.getItem('pong-online-name')||'';
+  if(_olEl['online-name'])_olEl['online-name'].value=savedName;
   const sk=SKINS[currentSkin];
   _olEl['online-lobby'].style.color=sk.menuFg;
   applyMenuSkin();
@@ -255,7 +265,7 @@ function _onHostConnection(conn){
 
   conn.on('open',()=>{
     console.log('[Online] Host: data channel open');
-    const myName=document.getElementById('name-left').value.trim()||'Player 1';
+    const myName=_getOnlineName()||'Player 1';
     conn.send({type:'hello',name:myName,skin:currentSkin});
     _olEl['online-host-status'].textContent='✓ connected!';
   });
@@ -386,7 +396,7 @@ function onlineJoin(){
       console.log('[Online] Guest: data channel open');
       if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
       _olEl['online-join-status'].textContent='④ connected! exchanging info...';
-      const myName=document.getElementById('name-right').value.trim()||document.getElementById('name-left').value.trim()||'Player 2';
+      const myName=_getOnlineName()||'Player 2';
       onlineConn.send({type:'hello',name:myName});
     });
     onlineConn.on('data',data=>{
@@ -446,7 +456,7 @@ function onlineSetWin(n){
 // ── START GAME ──
 function onlineStartGame(){
   if(onlineRole==='host'&&onlineConn&&onlineConn.open){
-    nameLeft=document.getElementById('name-left').value.trim()||'Player 1';
+    nameLeft=_getOnlineName()||'Player 1';
     const msg={type:'gameStart',gameMode:_onlineGameMode,winScore:_onlineWinScore,
                skin:currentSkin,nameLeft,nameRight,matchFormat:1};
     onlineConn.send(msg);
