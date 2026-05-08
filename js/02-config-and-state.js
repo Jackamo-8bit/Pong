@@ -114,14 +114,14 @@ function globalRallyPB(){
 // ACHIEVEMENTS
 // ═══════════════════════════════════════════════════════════════════
 const ACHIEVEMENTS={
-  untouched:{name:'Untouched',icon:'🛡️',desc:'Win a set without opponent scoring'},
-  railrider:{name:'Rail Rider',icon:'🔥',desc:'15+ rally hits in a match'},
-  comeback:{name:'Come Back Kid',icon:'🔄',desc:'Win after being 3+ points down'},
-  brickmaster:{name:'Brick Breaker',icon:'🧱',desc:'Break 10+ bricks in one game'},
-  speedemon:{name:'Speed Demon',icon:'⚡',desc:'Hit rally 10+ in a match'},
-  survivor60:{name:'Survivor',icon:'🕐',desc:'Last 60s in survival mode'},
-  survivor120:{name:'Iron Will',icon:'💎',desc:'Last 120s in survival mode'},
-  chaoswin:{name:'Chaos Champion',icon:'🌀',desc:'Win a match in chaos mode'},
+  untouched:{name:'Untouched',icon:'[S]',desc:'Win a set without opponent scoring'},
+  railrider:{name:'Rail Rider',icon:'[R]',desc:'15+ rally hits in a match'},
+  comeback:{name:'Come Back Kid',icon:'[C]',desc:'Win after being 3+ points down'},
+  brickmaster:{name:'Brick Breaker',icon:'[B]',desc:'Break 10+ bricks in one game'},
+  speedemon:{name:'Speed Demon',icon:'[F]',desc:'Hit rally 10+ in a match'},
+  survivor60:{name:'Survivor',icon:'[60]',desc:'Last 60s in survival mode'},
+  survivor120:{name:'Iron Will',icon:'[120]',desc:'Last 120s in survival mode'},
+  chaoswin:{name:'Chaos Champion',icon:'[X]',desc:'Win a match in chaos mode'},
 };
 function loadBadges(){try{return JSON.parse(localStorage.getItem('pong_badges')||'{}');}catch{return {};}}
 function saveBadges(b){try{localStorage.setItem('pong_badges',JSON.stringify(b));}catch{}}
