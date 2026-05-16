@@ -220,21 +220,21 @@
     <div class="menu-label">YOUR NAME</div>
     <input class="name-input" id="online-name" maxlength="16" placeholder="enter your name" style="text-align:center;font-size:14px;width:200px;">
     <div id="online-turn-status" style="font-size:11px;letter-spacing:1px;"></div>
-    <div id="online-turn-setup" style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;opacity:.7;max-width:340px;text-align:center;">
-      <div>one-time setup (free, no credit card):</div>
-      <div>1. go to <a href="https://www.metered.ca/stun-turn" target="_blank" style="color:#8af;text-decoration:underline;">metered.ca/stun-turn</a> and sign up</div>
-      <div>2. create a TURN server → copy your <b>app name</b> and <b>API key</b></div>
+    <div class="row" style="margin-top:4px;">
+      <button class="btn" id="online-host-btn" onclick="onlineHost()">Create Game</button>
+      <button class="btn" id="online-join-btn" onclick="onlineShowJoin()">Join Game</button>
+    </div>
+    <button class="btn-o" onclick="showMenu()">Back</button>
+    <button class="btn-o" onclick="onlineToggleAdvanced()" style="font-size:10px;opacity:.4;margin-top:4px;">Advanced</button>
+    <div id="online-turn-setup" style="display:none;flex-direction:column;align-items:center;gap:6px;font-size:10px;opacity:.7;max-width:340px;text-align:center;">
+      <div>optional: add your own TURN relay for better connectivity</div>
+      <div>sign up at <a href="https://www.metered.ca/stun-turn" target="_blank" style="color:#8af;text-decoration:underline;">metered.ca/stun-turn</a> (free)</div>
       <div style="display:flex;flex-direction:column;gap:4px;width:100%;align-items:center;">
         <input class="name-input" id="online-turn-app" placeholder="app name (e.g. my-pong)" style="font-size:11px;width:220px;text-align:center;">
         <input class="name-input" id="online-turn-key" placeholder="API key" style="font-size:11px;width:220px;text-align:center;">
         <button class="btn-o" onclick="onlineSaveTurnKey()" style="font-size:10px;padding:4px 14px;">Save & Verify</button>
       </div>
     </div>
-    <div class="row" style="margin-top:4px;">
-      <button class="btn" id="online-host-btn" onclick="onlineHost()">Create Game</button>
-      <button class="btn" id="online-join-btn" onclick="onlineShowJoin()">Join Game</button>
-    </div>
-    <button class="btn-o" onclick="showMenu()">Back</button>
   </div>
 
   <div id="online-hosting" style="display:none;flex-direction:column;align-items:center;gap:12px;">
