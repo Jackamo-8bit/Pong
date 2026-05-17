@@ -225,16 +225,6 @@
       <button class="btn" id="online-join-btn" onclick="onlineShowJoin()">Join Game</button>
     </div>
     <button class="btn-o" onclick="showMenu()">Back</button>
-    <button class="btn-o" onclick="onlineToggleAdvanced()" style="font-size:10px;opacity:.4;margin-top:4px;">Advanced</button>
-    <div id="online-turn-setup" style="display:none;flex-direction:column;align-items:center;gap:6px;font-size:10px;opacity:.7;max-width:340px;text-align:center;">
-      <div>optional: add your own TURN relay for better connectivity</div>
-      <div>sign up at <a href="https://www.metered.ca/stun-turn" target="_blank" style="color:#8af;text-decoration:underline;">metered.ca/stun-turn</a> (free)</div>
-      <div style="display:flex;flex-direction:column;gap:4px;width:100%;align-items:center;">
-        <input class="name-input" id="online-turn-app" placeholder="app name (e.g. my-pong)" style="font-size:11px;width:220px;text-align:center;">
-        <input class="name-input" id="online-turn-key" placeholder="API key" style="font-size:11px;width:220px;text-align:center;">
-        <button class="btn-o" onclick="onlineSaveTurnKey()" style="font-size:10px;padding:4px 14px;">Save & Verify</button>
-      </div>
-    </div>
   </div>
 
   <div id="online-hosting" style="display:none;flex-direction:column;align-items:center;gap:12px;">

@@ -35,72 +35,56 @@ let _netTargets={
 // ICE / TURN CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════
 
-// STUN discovers public IPs (~60% success across different NATs).
-// TURN relays traffic when direct P2P fails — required for strict NATs.
+// STUN discovers public IPs — enables direct peer-to-peer connections.
+// TURN relays traffic when direct P2P is blocked by strict NATs/firewalls.
 //
 // Layered approach:
 //   1. Google STUN (fast, free, reliable)
-//   2. Metered Open Relay TURN (free public, no API key needed)
-//   3. Optional: user's own Metered.ca TURN (for better reliability)
-const BASE_ICE_SERVERS=[
+//   2. Metered.ca TURN (dedicated, fetched fresh each session via API)
+//   3. Metered Open Relay (free public backup, no API key)
+const STUN_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun.relay.metered.ca:80'},
-  // Free public TURN — works everywhere, no account needed
-  {urls:'turn:openrelay.metered.ca:80',       username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:443',      username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turns:openrelay.metered.ca:443',     username:'openrelayproject',credential:'openrelayproject'}
+  {urls:'stun:stun.relay.metered.ca:80'}
 ];
-let ICE_SERVERS=[...BASE_ICE_SERVERS];
+// Free public TURN backup — may be slow/unreliable but better than nothing
+const OPEN_RELAY_TURN=[
+  {urls:'turn:openrelay.metered.ca:80',   username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',  username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turns:openrelay.metered.ca:443', username:'openrelayproject',credential:'openrelayproject'}
+];
 
-// Optional: Metered.ca custom TURN for advanced users who want their own
-// relay server. Saved in localStorage. Not required — public TURN works fine.
-let _turnApp=localStorage.getItem('pong-turn-app')||'';
-let _turnKey=localStorage.getItem('pong-turn-key')||'';
-let _turnCustomReady=false;
+let ICE_SERVERS=[...STUN_SERVERS,...OPEN_RELAY_TURN];
+let _turnReady=false;
 
 let PEER_CONFIG={
   debug:1,
   config:{iceServers:ICE_SERVERS}
 };
 
-function _cleanAppName(raw){
-  return(raw||'').trim().replace(/\.metered\.live$/i,'').replace(/^https?:\/\//,'');
-}
-
+// Fetch fresh TURN credentials from Metered.ca (free 500MB/month).
+// Credentials rotate automatically — hardcoding the API key is safe
+// because it only grants access to the TURN relay quota.
 async function _fetchTurnCreds(){
-  if(!_turnApp||!_turnKey){_turnCustomReady=false;return false;}
   try{
-    const url='https://'+_turnApp+'.metered.live/api/v1/turn/credentials?apiKey='+encodeURIComponent(_turnKey);
-    console.log('[Online] Fetching custom TURN from',_turnApp+'.metered.live');
+    const url='https://jackamo-8bitpong.metered.live/api/v1/turn/credentials?apiKey=7318b83301a31b2e2084ec73094083a51a65';
+    console.log('[Online] Fetching TURN credentials...');
     const r=await fetch(url);
     if(!r.ok){
-      console.warn('[Online] TURN API:',r.status===401?'invalid API key':'status '+r.status);
-      _turnCustomReady=false;return false;
+      console.warn('[Online] TURN API error:',r.status);
+      _turnReady=false;return false;
     }
     const creds=await r.json();
-    if(!Array.isArray(creds)||!creds.length){_turnCustomReady=false;return false;}
-    // Merge custom TURN servers with the base (public) servers
-    ICE_SERVERS=[...BASE_ICE_SERVERS,...creds];
+    if(!Array.isArray(creds)||!creds.length){_turnReady=false;return false;}
+    // Dedicated TURN first (most reliable), then public backup
+    ICE_SERVERS=[...STUN_SERVERS,...creds,...OPEN_RELAY_TURN];
     PEER_CONFIG.config.iceServers=ICE_SERVERS;
-    _turnCustomReady=true;
-    console.log('[Online] Added',creds.length,'custom TURN servers (total:',ICE_SERVERS.length,')');
+    _turnReady=true;
+    console.log('[Online] Got',creds.length,'TURN servers (total:',ICE_SERVERS.length,')');
     return true;
   }catch(e){
-    console.warn('[Online] Could not fetch custom TURN creds:',e);
-    _turnCustomReady=false;return false;
-  }
-}
-
-function _saveTurnConfig(app,key){
-  _turnApp=_cleanAppName(app);
-  _turnKey=(key||'').trim();
-  if(_turnApp&&_turnKey){
-    localStorage.setItem('pong-turn-app',_turnApp);
-    localStorage.setItem('pong-turn-key',_turnKey);
-  }else{
-    localStorage.removeItem('pong-turn-app');
-    localStorage.removeItem('pong-turn-key');
+    console.warn('[Online] Could not fetch TURN creds, using public relay:',e);
+    _turnReady=false;return false;
   }
 }
 
@@ -169,56 +153,19 @@ async function onlineShowChoice(){
   if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
   if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
   _olShowSub('online-choice');
-  _updateTurnUI();
-  // If user has custom TURN configured, verify it silently
-  if(_turnApp&&_turnKey){
-    await _fetchTurnCreds();
-    _updateTurnUI();
-  }
-}
-
-function _updateTurnUI(){
+  // Fetch fresh TURN credentials in background
   const el=document.getElementById('online-turn-status');
-  const setupEl=document.getElementById('online-turn-setup');
-  if(!el) return;
-  // Public TURN is always available — show green by default
-  if(_turnCustomReady){
-    el.textContent='relay ready (public + custom)';
-    el.style.color='#6c8';
-  }else if(_turnApp&&_turnKey){
-    el.textContent='relay ready (custom key invalid, using public)';
-    el.style.color='#eb4';
-  }else{
-    el.textContent='relay ready';
-    el.style.color='#6c8';
+  if(el){el.textContent='connecting to relay...';el.style.color='#aaa';}
+  const ok=await _fetchTurnCreds();
+  if(el){
+    if(ok){
+      el.textContent='relay ready';
+      el.style.color='#6c8';
+    }else{
+      el.textContent='using backup relay';
+      el.style.color='#eb4';
+    }
   }
-  // Always hide advanced setup unless user toggles it
-  if(setupEl&&!setupEl.dataset.expanded) setupEl.style.display='none';
-  const appInp=document.getElementById('online-turn-app');
-  const keyInp=document.getElementById('online-turn-key');
-  if(appInp) appInp.value=_turnApp||'';
-  if(keyInp) keyInp.value=_turnKey?'••••'+_turnKey.slice(-4):'';
-}
-
-function onlineToggleAdvanced(){
-  const setupEl=document.getElementById('online-turn-setup');
-  if(!setupEl) return;
-  const show=setupEl.style.display==='none';
-  setupEl.style.display=show?'':'none';
-  setupEl.dataset.expanded=show?'1':'';
-}
-
-async function onlineSaveTurnKey(){
-  const appInp=document.getElementById('online-turn-app');
-  const keyInp=document.getElementById('online-turn-key');
-  if(!appInp||!keyInp) return;
-  const app=appInp.value.trim(), key=keyInp.value.trim();
-  if(!app||!key||key.startsWith('••')) return;
-  _saveTurnConfig(app,key);
-  const el=document.getElementById('online-turn-status');
-  if(el){el.textContent='verifying...';el.style.color='#aaa';}
-  await _fetchTurnCreds();
-  _updateTurnUI();
 }
 
 function onlineShowJoin(){
