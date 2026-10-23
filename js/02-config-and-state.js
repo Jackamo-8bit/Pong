@@ -325,6 +325,9 @@ window.addEventListener('orientationchange',()=>setTimeout(checkRotatePrompt,250
 
 const AI_SPEED={easy:2.2,medium:3.8,hard:5.6};
 const AI_ERROR={easy:70,medium:38,hard:6};
+// Max paddle-relative contact point the AI aims with (0 = no aiming). Medium's tracking
+// error is too large to hit paddle edges reliably, so aiming made it concede more.
+const AI_AIM={easy:0,medium:0,hard:.75};
 const BASE_SPEED=4.5,SPEED_RAMP=0.06,MAX_SPEED=14;
 function rallySpeedBonus(hits){
   // Linear ramp up to rally 10, then gentler logarithmic scaling
