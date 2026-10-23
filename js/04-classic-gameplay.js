@@ -297,21 +297,50 @@ function handleTouch(e){
 // AI
 // ═══════════════════════════════════════════════════════════════════
 let aiErrorLeft=0,aiErrorRight=0;
-// Predict where the ball will arrive at a given x, accounting for wall bounces
-function predictBallY(ball,targetX){
+let aiAim={left:null,right:null}; // contact point chosen for the current approach
+// Predict where the ball will arrive at a given x, accounting for wall bounces.
+// onStep(x,y) is called for each simulated position (used to spot power-ups on the path).
+function predictBallY(ball,targetX,onStep){
   let bx=ball.x,by=ball.y,vx=ball.vx,vy=ball.vy,spin=ball.spin||0;
   if(vx===0)return by;
   if((targetX>bx&&vx<0)||(targetX<bx&&vx>0))return by;
+  const maxY=H-getBallSize();
   // Step simulation to account for spin curving the trajectory
   for(let i=0;i<300;i++){
     vy+=spin*0.025;
     spin*=0.97;
     bx+=vx;by+=vy;
     if(by<0){by=-by;vy=Math.abs(vy);}
-    if(by>H){by=2*H-by;vy=-Math.abs(vy);}
+    if(by>maxY){by=2*maxY-by;vy=-Math.abs(vy);}
+    if(onStep)onStep(bx,by);
     if((vx>0&&bx>=targetX)||(vx<0&&bx<=targetX))return by;
   }
   return by;
+}
+// Pick where on our paddle to meet the ball so the return lands far from mid-court
+// (players drift back to the middle between shots, so the corners are the open space).
+// Mirrors the flat-paddle bounce in updateFrame: angle=rel*.8, spin=rel*.35.
+// Only contact points whose paddle centre lies in [minC,maxC] (reachable in time) are considered.
+function chooseAim(ball,side,contactY,ph,minC,maxC){
+  const maxRel=AI_AIM[aiDiff];if(!maxRel)return 0;
+  const myX=side==='left'?24+PW:W-24-PW,oppX=side==='left'?W-24-PW:24+PW;
+  const BS=getBallSize(),dir=side==='left'?1:-1;
+  const spd=Math.min(Math.hypot(ball.vx,ball.vy)+rallySpeedBonus(rallyHits+1),MAX_SPEED);
+  let best=0,bestScore=-Infinity;
+  for(let i=-4;i<=4;i++){
+    const rel=maxRel*i/4;
+    const padC=contactY+BS/2-rel*ph/2;
+    if(rel!==0&&(padC<minC||padC>maxC))continue;
+    const shot={x:myX,y:contactY,vx:dir*Math.abs(Math.cos(rel*.8)*spd),vy:Math.sin(rel*.8)*spd,spin:rel*.35};
+    let puBonus=0;
+    const y=predictBallY(shot,oppX,(bx,by)=>{
+      for(const fp of fieldPowerups)if(Math.hypot(bx+BS/2-fp.x,by+BS/2-fp.y)<20+BS/2)puBonus=60;
+    });
+    // Far from mid-court is good; edge hits are riskier, so slight preference for the paddle middle
+    const score=Math.abs(y+BS/2-H/2)+puBonus-Math.abs(rel)*20;
+    if(score>bestScore){bestScore=score;best=rel;}
+  }
+  return best;
 }
 function moveAI(paddle,ball,side,dt){
   side=side||'right';dt=dt||1;
@@ -326,6 +355,12 @@ function moveAI(paddle,ball,side,dt){
     else if(gap<=-3){spd*=0.90;maxErr*=1.3;}
     else if(gap<=-2){spd*=0.95;maxErr*=1.15;}
   }
+  // Power-ups hinder the AI the way they'd hinder a human (see movePaddles)
+  let errMul=1;
+  const slowPU=getAPU('slowmo');if(slowPU&&slowPU.side!==side)spd*=.3;
+  const invPU=getAPU('invert');if(invPU&&invPU.side!==side){spd*=.5;errMul*=2;}
+  if(hasAPU('ghost'))errMul*=1.6;
+  if(hasAPU('decoy'))errMul*=1.4;
   // Per-side error tracking so two AIs don't share drift
   if(side==='left'){
     aiErrorLeft+=(Math.random()-.5)*4*dt;
@@ -336,8 +371,10 @@ function moveAI(paddle,ball,side,dt){
     aiErrorRight=Math.max(-maxErr,Math.min(maxErr,aiErrorRight));
     var err=aiErrorRight;
   }
+  err*=errMul;
   // Predict trajectory when ball is heading toward this paddle; otherwise drift to center
   const heading=(side==='left'&&ball.vx<0)||(side==='right'&&ball.vx>0);
+  if(!heading||serving)aiAim[side]=null;
   let targetY;
   if(serving){
     targetY=H/2+err*0.25;
@@ -346,7 +383,14 @@ function moveAI(paddle,ball,side,dt){
     targetY=(urgency?ball.y+ball.size/2:H/2)+err*0.35;
   }else if(heading){
     const padX=side==='left'?24+PW:W-24-PW;
-    targetY=predictBallY(ball,padX)+err;
+    let frames=0;
+    const contactY=predictBallY(ball,padX,()=>frames++);
+    if(aiAim[side]===null){
+      const c=paddle.y+ph/2,reach=spd*frames*.8; // 20% slack for error drift
+      aiAim[side]=chooseAim(ball,side,contactY,ph,Math.max(ph/2,c-reach),Math.min(H-ph/2,c+reach));
+    }
+    // Offset paddle so the ball meets it at the chosen point: rel=(ballC-padC)/(ph/2)
+    targetY=contactY+ball.size/2-aiAim[side]*ph/2+err;
   }else{
     // Ball heading away — drift toward center with some error
     targetY=H/2+err*0.5;
