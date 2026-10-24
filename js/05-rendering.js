@@ -270,7 +270,7 @@ function drawActivePuHud(now){
       ctx.globalAlpha=.85;ctx.fillStyle=pu.color;ctx.beginPath();ctx.roundRect(bx,by,barW*ratio,barH,Math.min(7,barW*ratio/2));ctx.fill();
     }
     ctx.globalAlpha=1;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#fff';
-    drawModernPowerupGlyph(ap.type,bx+11,by+barH/2,14,pu.color);
+    drawModernPowerupGlyph(ap.type,bx+11,by+barH/2,14,'#fff');
     ctx.font='14px '+UI_FONT;ctx.fillStyle='#fff';ctx.fillText(pu.name,bx+22,by+barH/2);
     ctx.textBaseline='alphabetic';ctx.restore();
   }
@@ -383,8 +383,8 @@ function drawServe(now){
   ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
   ctx.fillText(nameLeft,W/2-80,78);ctx.fillText(nameRight,W/2+80,78);ctx.globalAlpha=1;
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
-  const lG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='left'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='right';
-  const rG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='right'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='left';
+  const lG=getAPUSide('widepaddle')==='left';
+  const rG=getAPUSide('widepaddle')==='right';
   drawPaddle(LP,s.left.y,dlPH,sk,lG);drawPaddle(RP,s.right.y,drPH,sk,rG);
   drawParticles();
   if(gameMode==='bricks')drawBricks();
@@ -495,25 +495,10 @@ function draw(now){
   }
 
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
-  const lG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='left'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='right';
-  const rG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='right'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='left';
-  // Curved paddle visual — draw convex bulge on opponent's paddle
-  const cpPU=getAPU('curvedpaddle');
-  const curvedL=cpPU&&cpPU.side!=='left';
-  const curvedR=cpPU&&cpPU.side!=='right';
+  const lG=getAPUSide('widepaddle')==='left';
+  const rG=getAPUSide('widepaddle')==='right';
   drawPaddle(LP,s.left.y,dlPH,sk,lG);
-  if(curvedL){ctx.save();ctx.strokeStyle=POWER_UPS.curvedpaddle.color;ctx.lineWidth=2.5;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(LP+PW+12,s.left.y+dlPH/2,dlPH*.6,-Math.PI*.45,Math.PI*.45);ctx.stroke();ctx.restore();}
   drawPaddle(RP,s.right.y,drPH,sk,rG);
-  if(curvedR){ctx.save();ctx.strokeStyle=POWER_UPS.curvedpaddle.color;ctx.lineWidth=2.5;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(RP-12,s.right.y+drPH/2,drPH*.6,Math.PI*.55,Math.PI*1.45);ctx.stroke();ctx.restore();}
-  // Defender paddle
-  if(defenderPaddle){
-    const dp=defenderPaddle;
-    ctx.save();ctx.globalAlpha=.7;ctx.fillStyle=POWER_UPS.defender.color;
-    ctx.fillRect(dp.x,dp.y,8,dp.h);
-    ctx.strokeStyle=POWER_UPS.defender.color;ctx.lineWidth=1;ctx.globalAlpha=.3;
-    ctx.strokeRect(dp.x-1,dp.y-1,10,dp.h+2);
-    ctx.restore();
-  }
   // Shield indicator — glowing line at the goal
   if(shieldSide){
     const sx2=shieldSide==='left'?2:W-4;

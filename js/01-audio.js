@@ -58,13 +58,11 @@ const PU_SOUNDS={
   // Ball modifiers: low bass thud + characteristic tone
   decoy:()=>{const ac=getAudio(),t=ac.currentTime;playTone(180,'triangle',.15,.2,t);playTone(360,'sine',.1,.12,t+.05);playTone(540,'sine',.08,.08,t+.1);},
   bouncy:()=>{const ac=getAudio(),t=ac.currentTime;playTone(200,'sine',.15,.2,t);playTone(400,'sine',.12,.12,t+.06,600);},
-  lead:()=>{const ac=getAudio(),t=ac.currentTime;playTone(100,'sawtooth',.2,.25,t);playTone(80,'sawtooth',.15,.15,t+.08);},
   curve:()=>{const ac=getAudio(),t=ac.currentTime;playTone(300,'sine',.15,.2,t,500);playTone(500,'sine',.12,.12,t+.08,300);},
   bigball:()=>{const ac=getAudio(),t=ac.currentTime;playTone(150,'triangle',.2,.2,t);playTone(300,'sine',.15,.15,t+.06);},
   smallball:()=>{const ac=getAudio(),t=ac.currentTime;playTone(800,'sine',.12,.15,t);playTone(1200,'sine',.08,.1,t+.05);},
   // Paddle modifiers: bright chime + ping
   widepaddle:()=>{const ac=getAudio(),t=ac.currentTime;playTone(880,'sine',.12,.2,t);playTone(1100,'sine',.1,.12,t+.08);playTone(1320,'sine',.08,.08,t+.16);},
-  shortpaddle:()=>{const ac=getAudio(),t=ac.currentTime;playTone(600,'triangle',.12,.2,t,400);playTone(400,'triangle',.1,.12,t+.06,200);},
   slowmo:()=>{const ac=getAudio(),t=ac.currentTime;playTone(400,'sine',.4,.2,t,150);playTone(300,'triangle',.3,.12,t+.1,100);},
   // Portal: spacey whoosh — descending sweep with noise
   portal:()=>{const ac=getAudio(),t=ac.currentTime;playTone(1200,'sine',.4,.2,t,200);playTone(800,'triangle',.5,.12,t+.05,150);playNoise(.3,.06,t);},
@@ -75,7 +73,6 @@ const PU_SOUNDS={
   // Magnet: buzzing electromagnetic hum
   magnet:()=>{const ac=getAudio(),t=ac.currentTime;playTone(120,'sawtooth',.3,.2,t);playTone(240,'sawtooth',.25,.12,t+.05);playTone(360,'sine',.2,.1,t+.1);},
   // Defender: military horn/alert
-  defender:()=>{const ac=getAudio(),t=ac.currentTime;playTone(523,'triangle',.1,.25,t);playTone(659,'triangle',.1,.25,t+.12);playTone(784,'triangle',.2,.25,t+.24);},
   // Black hole: deep rumble + warp
   blackhole:()=>{const ac=getAudio(),t=ac.currentTime;playTone(60,'sawtooth',.5,.25,t,30);playTone(400,'sine',.3,.15,t,1200);playNoise(.3,.08,t);},
   // Invert: glitchy scramble
@@ -83,7 +80,6 @@ const PU_SOUNDS={
   // Slow Mo: low stretch
   slowmo:()=>{const ac=getAudio(),t=ac.currentTime;playTone(400,'sine',.4,.2,t,150);playTone(300,'triangle',.3,.12,t+.1,100);},
   // Curved Paddle: bendy twang
-  curvedpaddle:()=>{const ac=getAudio(),t=ac.currentTime;playTone(500,'triangle',.15,.2,t,800);playTone(800,'triangle',.15,.15,t+.1,400);},
   // Laser: high-energy zap
   laser:()=>{const ac=getAudio(),t=ac.currentTime;playTone(1800,'sawtooth',.3,.2,t,600);playTone(2400,'sine',.2,.1,t+.05);playNoise(.15,.06,t);},
   // Freeze: crystalline chime

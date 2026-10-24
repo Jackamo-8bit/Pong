@@ -14,35 +14,32 @@ const SKINS={
 // POWER-UPS (tuned durations)
 // ═══════════════════════════════════════════════════════════════════
 const POWER_UPS={
-  decoy:      {name:'DECOY',       desc:'Multi-ball chaos!',       icon:'🎭',color:'#ff6b35',duration:4500},
-  bouncy:     {name:'BOUNCY BALL', desc:'Extra springy!',         icon:'🏀',color:'#ff9f1c',duration:5500},
-  lead:       {name:'LEAD BALL',   desc:'Heavy & sluggish...',     icon:'⚫',color:'#888',   duration:4500},
-  curve:      {name:'CURVE BALL',  desc:'Ball curves in flight!', icon:'🌀',color:'#a855f7',duration:5500},
-  bigball:    {name:'BIG BALL',    desc:'Impossible to miss!',    icon:'🔵',color:'#3b82f6',duration:4500},
-  smallball:  {name:'SMALL BALL',  desc:'Tiny & tricky...',       icon:'🔴',color:'#ef4444',duration:4500},
-  widepaddle: {name:'WIDE PADDLE', desc:'Your paddle grows!',     icon:'_wide_',color:'#22c55e',duration:6000,paddle:true},
-  shortpaddle:{name:'SHORT PADDLE',desc:"Opponent shrinks!",      icon:'_short_',color:'#f43f5e',duration:6000,paddle:true},
-  blackhole:  {name:'BLACK HOLE',  desc:'Ball teleports randomly!',icon:'🕳️',color:'#6b21a8',duration:0},
-  slowmo:     {name:'SLOW MO',     desc:'Opponent paddle slows!', icon:'🐌',color:'#f59e0b',duration:5000},
-  defender:   {name:'DEFENDER',    desc:'AI ally guards your goal!',icon:'🛡️',color:'#06b6d4',duration:5500},
-  shield:     {name:'SHIELD',      desc:'Blocks one goal!',       icon:'🔰',color:'#10b981',duration:20000},
-  magnet:     {name:'MAGNET',      desc:'Returns gravitate to you!',icon:'🧲',color:'#ec4899',duration:5500},
-  curvedpaddle:{name:'CURVED',     desc:'Opponent paddle curves!',icon:'🪃',color:'#f97316',duration:6000},
-  ghost:      {name:'GHOST BALL',  desc:'Ball nearly invisible!', icon:'👻',color:'#94a3b8',duration:5000},
-  invert:     {name:'INVERT',      desc:'Opponent controls flip!',icon:'🔄',color:'#8b5cf6',duration:5500},
-  portal:     {name:'PORTAL',      desc:'Two linked portals!',    icon:'🌀',color:'#2dd4bf',duration:12000},
+  decoy:      {name:'Decoy',        desc:'Fake balls join the real one',          icon:'🎭',color:'#ff6b35',duration:4500},
+  bouncy:     {name:'Bouncy ball',  desc:'Extra springy',                         icon:'🏀',color:'#ff9f1c',duration:5500},
+  curve:      {name:'Curve ball',   desc:'The ball swerves in flight',            icon:'🌀',color:'#a855f7',duration:5500},
+  bigball:    {name:'Big ball',     desc:'The ball grows',                        icon:'🔵',color:'#3b82f6',duration:4500},
+  smallball:  {name:'Small ball',   desc:'The ball shrinks',                      icon:'🔴',color:'#ef4444',duration:4500},
+  widepaddle: {name:'Wide paddle',  desc:'Your paddle grows',                     icon:'_wide_',color:'#22c55e',duration:6000,paddle:true},
+  blackhole:  {name:'Black hole',   desc:'The ball warps somewhere random',       icon:'🕳️',color:'#6b21a8',duration:0},
+  slowmo:     {name:'Slow-mo',      desc:"Your opponent's paddle slows down",     icon:'🐌',color:'#f59e0b',duration:5000},
+  shield:     {name:'Shield',       desc:'Blocks the next goal against you',      icon:'🔰',color:'#10b981',duration:20000},
+  magnet:     {name:'Magnet',       desc:'Returns are pulled towards your paddle',icon:'🧲',color:'#ec4899',duration:5500},
+  ghost:      {name:'Ghost ball',   desc:'The ball turns almost invisible',       icon:'👻',color:'#94a3b8',duration:5000},
+  invert:     {name:'Invert',       desc:"Your opponent's controls flip",         icon:'🔄',color:'#8b5cf6',duration:5500},
+  portal:     {name:'Portal',       desc:'Two linked portals open on the court',  icon:'🌀',color:'#2dd4bf',duration:12000},
   // Survival-only power-ups
-  laser:      {name:'LASER',       desc:'Paddle fires a laser!',  icon:'⚡',color:'#00bfff',duration:4000},
-  freeze:     {name:'FREEZE',      desc:'Bricks stop moving!',    icon:'❄️',color:'#67e8f9',duration:5000},
-  bomb:       {name:'BOMB',        desc:'Next hit explodes!',     icon:'💣',color:'#ff4500',duration:15000},
-  multiball:  {name:'MULTI-BALL',  desc:'Ball splits into 3!',    icon:'⚪',color:'#e2e8f0',duration:0},
-  survslowmo: {name:'SLOW-MO',     desc:'Bricks slow down!',      icon:'🐌',color:'#fbbf24',duration:8000},
-  magnetpaddle:{name:'MAGNET PAD', desc:'Ball sticks to paddle!', icon:'🧲',color:'#f472b6',duration:10000},
-  fireball:   {name:'FIREBALL',    desc:'Ball burns through!',    icon:'🔥',color:'#f97316',duration:5000},
-  shrinkrow:  {name:'SHRINK ROW',  desc:'Bottom row vanishes!',   icon:'💨',color:'#a78bfa',duration:0},
+  laser:      {name:'Laser',        desc:'Your paddle fires a laser',             icon:'⚡',color:'#00bfff',duration:4000},
+  freeze:     {name:'Freeze',       desc:'Bricks stop moving',                    icon:'❄️',color:'#67e8f9',duration:5000},
+  bomb:       {name:'Bomb',         desc:'Your next hit explodes',                icon:'💣',color:'#ff4500',duration:15000},
+  multiball:  {name:'Multi-ball',   desc:'The ball splits into 3',                icon:'⚪',color:'#e2e8f0',duration:0},
+  survslowmo: {name:'Slow-mo',      desc:'Bricks slow down',                      icon:'🐌',color:'#fbbf24',duration:8000},
+  magnetpaddle:{name:'Magnet paddle',desc:'The ball sticks to your paddle',       icon:'🧲',color:'#f472b6',duration:10000},
+  fireball:   {name:'Fireball',     desc:'The ball burns through bricks',         icon:'🔥',color:'#f97316',duration:5000},
+  shrinkrow:  {name:'Shrink row',   desc:'The bottom row vanishes',               icon:'💨',color:'#a78bfa',duration:0},
 };
 const SURV_ONLY_PUS=new Set(['laser','freeze','bomb','multiball','survslowmo','magnetpaddle','fireball','shrinkrow']);
-const PU_KEYS=Object.keys(POWER_UPS).filter(k=>!SURV_ONLY_PUS.has(k));
+// Classic/chaos/bricks pool. Bouncy and Big ball stay defined for survival only.
+const PU_KEYS=['decoy','curve','smallball','widepaddle','blackhole','slowmo','shield','magnet','ghost','invert','portal'];
 const BRICKS_PU_KEYS=[...PU_KEYS,'freeze'];
 const POWERUP_SPAWN_INTERVAL=9000, POWERUP_LIFESPAN=11000;
 const CHAOS_SPAWN_INTERVAL=2000;
@@ -358,9 +355,8 @@ function hasAPU(type){return activePowerups.some(p=>p.type===type);}
 function getAPU(type){return activePowerups.find(p=>p.type===type);}
 function anyAPU(){return activePowerups.length>0;}
 function getAPUSide(type){const p=getAPU(type);return p?p.side:null;}
-let decoyBalls=[],leadPreSpeed=null;
+let decoyBalls=[];
 let shieldSide=null; // which side has an active shield
-let defenderPaddle=null; // {side,y} — small AI-controlled paddle near goal
 let portalA=null,portalB=null; // {x,y} for linked portals
 let blackholePos=null; // {x,y} for the black hole on field
 let introPhase=true,introT=0;
@@ -372,12 +368,10 @@ function getPH(side){
   let h=PH;
   for(const ap of activePowerups){
     if(ap.type==='widepaddle'&&ap.side===side)h=Math.max(h,PH*1.8);
-    if(ap.type==='shortpaddle'&&ap.side!==side)h=Math.min(h,PH*.45);
   }
   return h;
 }
 function getBallSize(){
-  if(hasAPU('bigball'))return 26;
   if(hasAPU('smallball'))return 5;
   return 10;
 }
