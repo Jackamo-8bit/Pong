@@ -2,6 +2,7 @@
 // INIT / MATCH FLOW
 // ═══════════════════════════════════════════════════════════════════
 function initGameState(){
+  hitStop=0;
   particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];rallyHits=0;prevRallyHits=0;aiError=0;aiErrorLeft=0;aiErrorRight=0;
   shieldSide=null;portalA=null;portalB=null;blackholePos=null;
   bricks=[];
@@ -229,6 +230,33 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
 // ═══════════════════════════════════════════════════════════════════
+// GAMEPADS — translated into keyboard events, so every mode and screen works unchanged.
+// Pad 1 plays left (W/S, A/D), pad 2 plays right (arrows). A = Space, Start = P.
+// ═══════════════════════════════════════════════════════════════════
+const PAD_KEYS=[{up:'w',down:'s',left:'a',right:'d'},{up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'}];
+const padHeld=[{},{}];
+let padLoop=false;
+function padKey(i,key,down){
+  if(!!padHeld[i][key]===down)return;
+  padHeld[i][key]=down;
+  document.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key}));
+}
+function pollGamepads(){
+  const pads=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(Boolean).slice(0,2);
+  for(let i=0;i<2;i++){
+    const p=pads[i],k=PAD_KEYS[i];
+    // A missing pad releases anything it was holding, so keys can't get stuck
+    const ax=p?p.axes[0]||0:0,ay=p?p.axes[1]||0:0,b=n=>!!(p&&p.buttons[n]&&p.buttons[n].pressed);
+    padKey(i,k.up,ay<-.35||b(12));padKey(i,k.down,ay>.35||b(13));
+    padKey(i,k.left,ax<-.35||b(14));padKey(i,k.right,ax>.35||b(15));
+    padKey(i,' ',b(0));padKey(i,'p',b(9));
+  }
+  padLoop=pads.length>0;
+  if(padLoop)requestAnimationFrame(pollGamepads);
+}
+window.addEventListener('gamepadconnected',()=>{if(!padLoop){padLoop=true;requestAnimationFrame(pollGamepads);}});
+
+// ═══════════════════════════════════════════════════════════════════
 // TOUCH CONTROLS (with visual feedback)
 // ═══════════════════════════════════════════════════════════════════
 const touchY={left:null,right:null};
@@ -433,6 +461,13 @@ function updateFrame(){
   if(dt<0.001)dt=1; // guard against zero/negative
   lastFrameTime=now;
   const s=state,SPD=5;
+  // Hit-stop: hold everything for a few frames after a fast hit
+  if(hitStop>.5){ // .5 not 0: frame timing jitter would otherwise add an extra frozen frame
+    hitStop-=dt;_drawDt=dt;draw(now);
+    if(onlineRole==='host'&&onlineConn)onlineSendState(now);
+    animId=requestAnimationFrame(update);return;
+  }
+  const prevLY=s.left.y,prevRY=s.right.y;
 
   // Touch paddle movement (skip AI-controlled sides)
   const _aiL=tourney?tourneyAI.left:false;
@@ -457,6 +492,8 @@ function updateFrame(){
   }
 
   movePaddles(s,SPD,dt);
+  // Paddle speed this frame (px per 60fps frame), used to put spin on the ball
+  s.left.vy=(s.left.y-prevLY)/dt;s.right.vy=(s.right.y-prevRY)/dt;
 
   // Power-up tick
   // Expire finished power-ups
@@ -509,9 +546,9 @@ function updateFrame(){
     const rel=(s.ball.y+BS/2-(s.left.y+leftPH/2))/(leftPH/2);
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
-    s.ball.spin=rel*0.35;
+    s.ball.spin=rel*0.35+paddleSpin(s.left.vy);
     if(_puCurve)s.ball.curve=0;
-    spawnParticles(LP+PW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+    spawnParticles(LP+PW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();hitFx(spd);
     lastBrickToucher='left';
     checkFieldPuCollect('left',now);
   }
@@ -524,9 +561,9 @@ function updateFrame(){
     const rel=(s.ball.y+BS/2-(s.right.y+rightPH/2))/(rightPH/2);
     const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=-Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
-    s.ball.spin=rel*0.35;
+    s.ball.spin=rel*0.35+paddleSpin(s.right.vy);
     if(_puCurve)s.ball.curve=0;
-    spawnParticles(RP,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
+    spawnParticles(RP,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();hitFx(spd);
     lastBrickToucher='right';
     checkFieldPuCollect('right',now);
   }
@@ -604,6 +641,14 @@ function updateFrame(){
   _drawDt=dt;draw(now);
   if(onlineRole==='host'&&onlineConn)onlineSendState(now);
   animId=requestAnimationFrame(update);
+}
+
+// Moving the paddle as you hit brushes the ball: up to ±0.3 spin (keyboard speed 5 gives 0.25)
+function paddleSpin(vy){return Math.max(-.3,Math.min(.3,(vy||0)*.05));}
+// Fast returns shake harder and briefly freeze the game (hit-stop); skipped with reduced motion
+function hitFx(spd){
+  shakeAmt=3+Math.max(0,spd-8)*.6;
+  if(!prefersReducedMotion&&spd>=10)hitStop=Math.min(4,spd-9);
 }
 
 function movePaddles(s,SPD,dt){

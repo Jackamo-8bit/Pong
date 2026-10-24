@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════
 const LADDER=[
   {id:'rookie',   name:'Rookie',   blurb:'Still learning which way is up.',         speed:2.4,error:60,aim:0,  mode:'classic',to:5},
-  {id:'wall',     name:'The Wall', blurb:'Steady but sloppy. Never aims.',           speed:3.4,error:48,aim:0,  mode:'classic',to:5},
+  {id:'wall',     name:'The Wall', blurb:'Steady but sloppy. Never aims.',           speed:3.9,error:42,aim:0,  mode:'classic',to:5},
   {id:'sniper',   name:'Sniper',   blurb:'Aims every shot at the corners.',         speed:3.7,error:16,aim:.75,mode:'classic',to:7},
   {id:'trickster',name:'Trickster',blurb:'Only plays Chaos.',                       speed:4.2,error:20,aim:.5, mode:'chaos',  to:7},
   {id:'champion', name:'Champion', blurb:'The hard AI at full strength.',           speed:5.6,error:6, aim:.75,mode:'classic',to:7},

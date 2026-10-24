@@ -341,6 +341,7 @@ let _drawDt=1; // passed to draw functions for visual decay
 let chaosHue=0,keys={};
 let serving=false,serveSide='left',countdown=0,countdownT=0;
 let shakeAmt=0;
+let hitStop=0; // frames left of the brief freeze after a fast hit
 let rallyHits=0,sessionRallyPB=0,rallyPopT=0;
 let ballTrail=[];
 let leftScoreFlash=0,rightScoreFlash=0;
