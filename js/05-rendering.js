@@ -247,8 +247,8 @@ function drawFieldPowerup(now){
     ctx.beginPath();ctx.arc(px,py,R+2,-Math.PI/2,-Math.PI/2+Math.PI*2*lr);ctx.stroke();
     ctx.globalAlpha=1;
     drawModernPowerupGlyph(fp.type,px,py,24,pu.color);
-    ctx.font='bold 8px monospace';ctx.fillStyle=pu.color;ctx.globalAlpha=lr;ctx.textAlign='center';ctx.textBaseline='alphabetic';
-    ctx.fillText(fp.type.toUpperCase(),px,py+R+12);
+    ctx.font='13px '+UI_FONT;ctx.fillStyle=pu.color;ctx.globalAlpha=lr;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(POWER_UPS[fp.type].name,px,py+R+13);
     ctx.globalAlpha=1;ctx.restore();
   }
 }
@@ -271,7 +271,7 @@ function drawActivePuHud(now){
     }
     ctx.globalAlpha=1;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#fff';
     drawModernPowerupGlyph(ap.type,bx+11,by+barH/2,14,pu.color);
-    ctx.font='bold 9px monospace';ctx.fillStyle='#fff';ctx.fillText(pu.name,bx+22,by+barH/2);
+    ctx.font='14px '+UI_FONT;ctx.fillStyle='#fff';ctx.fillText(pu.name,bx+22,by+barH/2);
     ctx.textBaseline='alphabetic';ctx.restore();
   }
 }
@@ -295,11 +295,11 @@ function drawRallyHud(){
   const shakeX=rallyShake>0?(Math.random()-0.5)*rallyShake*2:0;
   const shakeY=rallyShake>0?(Math.random()-0.5)*rallyShake*2:0;
   ctx.translate(W/2+shakeX,H-28+shakeY);ctx.scale(totalScale,totalScale);
-  ctx.font='bold 13px monospace';ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,70):sk.accent;
+  ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,70):sk.accent;
   ctx.fillText(`RALLY  ${rallyHits}`,0,0);
   if(rallyHits>=sessionRallyPB&&rallyHits>=5){
     ctx.globalAlpha=rallyAlpha*.75;
-    ctx.font='9px monospace';ctx.fillStyle=sk.fg;
+    ctx.font='14px '+UI_FONT;ctx.fillStyle=sk.fg;
     ctx.fillText('best rally!',0,14);
   }
   ctx.globalAlpha=1;ctx.restore();
@@ -349,7 +349,7 @@ function drawServeAim(now,side){
   // Angle strength indicator text
   const strength=Math.abs(offset);
   if(strength>.15){
-    ctx.globalAlpha=.4*pulse;ctx.font='9px monospace';ctx.textAlign='center';ctx.fillStyle=sk.fg;
+    ctx.globalAlpha=.4*pulse;ctx.font='14px '+UI_FONT;ctx.textAlign='center';ctx.fillStyle=sk.fg;
     const label=strength>.7?'sharp':strength>.4?'angled':'slight';
     ctx.fillText(label,sx+dx*.5,sy+dy*.5-10);
   }
@@ -380,7 +380,7 @@ function drawServe(now){
   ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
   ctx.fillText(s.left.score,W/2-80,60);ctx.fillText(s.right.score,W/2+80,60);
   ctx.restore();
-  ctx.font='12px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
+  ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
   ctx.fillText(nameLeft,W/2-80,78);ctx.fillText(nameRight,W/2+80,78);ctx.globalAlpha=1;
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
   const lG=hasAPU('widepaddle')&&getAPU('widepaddle').side==='left'||hasAPU('shortpaddle')&&getAPU('shortpaddle').side==='right';
@@ -392,32 +392,30 @@ function drawServe(now){
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
 
   if(countdown>0){
-    ctx.font='bold 80px monospace';ctx.textAlign='center';ctx.fillStyle=sk.fg;
-    ctx.globalAlpha=.9;ctx.fillText(countdown,W/2,H/2+28);ctx.globalAlpha=1;
+    ctx.font='112px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillStyle=sk.fg;
+    ctx.globalAlpha=.9;ctx.fillText(countdown,W/2,H/2+34);ctx.globalAlpha=1;
   }else{
     const sideIsAI=(tourney&&tourneyAI[serveSide])||(mode==='ai'&&serveSide==='right');
     const humanServes=!sideIsAI;
     if(humanServes)drawServeAim(now,serveSide);
 
     const serveName=playerName(serveSide);
-    ctx.font='bold 20px monospace';ctx.textAlign='center';ctx.fillStyle=sk.fg;
+    ctx.font='29px '+UI_FONT;ctx.textAlign='center';ctx.fillStyle=sk.fg;
     ctx.fillText(`${serveName}'s serve`,W/2,H/2-18);
-    ctx.font='11px monospace';ctx.fillStyle=sk.accent;
+    ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.accent;
     ctx.globalAlpha=.5+.5*Math.sin(now/300);
     if(humanServes){
       const isMobile='ontouchstart'in window;
-      ctx.fillText(isMobile?'touch to aim \u00b7 release to serve':'W/S or \u2191/\u2193 to aim \u00b7 space to serve',W/2,H/2+14);
+      ctx.fillText(isMobile?'Drag to aim, then let go to serve':'Aim with W/S or \u2191/\u2193, then press Space',W/2,H/2+16);
     }
     ctx.globalAlpha=1;
     if(sideIsAI&&now-countdownT>800)launchBall(serveSide);
   }
 
   if(matchFormat>1){
-    ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.45;ctx.textAlign='center';
-    ctx.fillText(`Set ${currentSet}  \u00b7  ${nameLeft} ${matchSets.left}\u2013${matchSets.right} ${nameRight}`,W/2,20);ctx.globalAlpha=1;
+    ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.45;ctx.textAlign='center';
+    ctx.fillText(`Set ${currentSet}: ${nameLeft} ${matchSets.left}\u2013${matchSets.right} ${nameRight}`,W/2,20);ctx.globalAlpha=1;
   }
-  ctx.font='11px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
-  ctx.fillText(nameLeft,W/2-70,H-18);ctx.fillText(nameRight,W/2+70,H-18);ctx.globalAlpha=1;
   ctx.restore();
 }
 
@@ -488,12 +486,12 @@ function draw(now){
   else{ctx.fillText(s.right.score,W/2+80,60);}
   ctx.restore();
   ctx.restore();
-  ctx.font='12px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
+  ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
   ctx.fillText(nameLeft,W/2-80,78);ctx.fillText(nameRight,W/2+80,78);ctx.globalAlpha=1;
 
   if(matchFormat>1){
-    ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
-    ctx.fillText(`Set ${currentSet}  \u00b7  ${nameLeft} ${matchSets.left}\u2013${matchSets.right} ${nameRight}`,W/2,20);ctx.globalAlpha=1;
+    ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
+    ctx.fillText(`Set ${currentSet}: ${nameLeft} ${matchSets.left}\u2013${matchSets.right} ${nameRight}`,W/2,20);ctx.globalAlpha=1;
   }
 
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
@@ -585,8 +583,8 @@ function draw(now){
   drawActivePuHud(now);drawRallyHud();
   if(gameMode==='bricks')drawBricks();
   if(gameMode==='chaos'){
-    ctx.save();ctx.font='bold 9px monospace';ctx.fillStyle='#ff4444';
-    ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText('CHAOS',6,14);
+    ctx.save();ctx.font='14px '+UI_FONT;ctx.fillStyle='#ff4444';
+    ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText('Chaos',6,16);
     ctx.globalAlpha=1;ctx.restore();
     // Intensity vignette when 3+ power-ups active
     const puCount=activePowerups.length;
@@ -603,11 +601,11 @@ function draw(now){
   }
   if(gameMode==='bricks'){
     const rem=bricks.filter(b=>b.alive).length;
-    ctx.save();ctx.font='bold 9px monospace';ctx.fillStyle=sk.accent;
-    ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText(`BRICKS ${rem}`,6,14);
+    ctx.save();ctx.font='14px '+UI_FONT;ctx.fillStyle=sk.accent;
+    ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText(`${rem} bricks left`,6,16);
     ctx.globalAlpha=1;ctx.restore();
     // Brick points HUD
-    ctx.save();ctx.font='12px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
+    ctx.save();ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
     if(brickPoints.left>0)ctx.fillText(`+${brickPoints.left} bricks`,W*.25,85);
     if(brickPoints.right>0)ctx.fillText(`+${brickPoints.right} bricks`,W*.75,85);
     ctx.globalAlpha=1;ctx.restore();
@@ -615,11 +613,9 @@ function draw(now){
 
   if(paused){
     ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
-    ctx.fillStyle=sk.fg;ctx.font='bold 34px monospace';ctx.textAlign='center';ctx.fillText('PAUSED',W/2,H/2-10);
-    ctx.font='13px monospace';ctx.fillStyle=sk.accent;ctx.fillText('press P to resume',W/2,H/2+22);
+    ctx.fillStyle=sk.fg;ctx.font='72px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
+    ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
   }
 
-  ctx.font='11px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;ctx.textAlign='center';
-  ctx.fillText(nameLeft,W/2-70,H-18);ctx.fillText(nameRight,W/2+70,H-18);ctx.globalAlpha=1;
   ctx.restore();
 }

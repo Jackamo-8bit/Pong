@@ -6,11 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Pong">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#121420">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPCEtLSBCYWNrZ3JvdW5kIC0tPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0iIzAwMCIvPgogIDwhLS0gTGVmdCBwYWRkbGUgLS0+CiAgPHJlY3QgeD0iMyIgeT0iOSIgd2lkdGg9IjMiIGhlaWdodD0iMTQiIHJ4PSIxLjUiIGZpbGw9IiNmZmYiLz4KICA8IS0tIFJpZ2h0IHBhZGRsZSAtLT4KICA8cmVjdCB4PSIyNiIgeT0iOSIgd2lkdGg9IjMiIGhlaWdodD0iMTQiIHJ4PSIxLjUiIGZpbGw9IiNmZmYiLz4KICA8IS0tIEJhbGwgLS0+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMi41IiBmaWxsPSIjZmZmIi8+CiAgPCEtLSBEYXNoZWQgY2VudHJlIGxpbmUgLS0+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMiIgeDI9IjE2IiB5Mj0iNiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjQiLz4KICA8bGluZSB4MT0iMTYiIHkxPSIxMCIgeDI9IjE2IiB5Mj0iMTQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC40Ii8+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMTgiIHgyPSIxNiIgeTI9IjIyIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNCIvPgogIDxsaW5lIHgxPSIxNiIgeTE9IjI2IiB4Mj0iMTYiIHkyPSIzMCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjQiLz4KPC9zdmc+">
 <title>Pong</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Jersey+15&display=swap">
 <link rel="stylesheet" href="css/styles.css">
 
 </head>
@@ -19,72 +22,78 @@
 
 <!-- ── MENU ── -->
 <div id="menu">
-  <div class="title-wrap" id="menu-title">
+  <header class="title-wrap" id="menu-title">
     <div class="title-paddle title-paddle-l"></div>
-    <div class="gtitle">Pong</div>
+    <h1 class="gtitle">Pong</h1>
     <div class="title-paddle title-paddle-r"></div>
+  </header>
+
+  <section class="setup" aria-label="Match setup">
+    <span class="setup-label" id="lbl-mode">Mode</span>
+    <div class="seg" id="gamemode-opts" role="group" aria-labelledby="lbl-mode">
+      <button class="opt-btn" data-gm="classic" onclick="setGameMode('classic')">Classic</button>
+      <button class="opt-btn" data-gm="chaos"   onclick="setGameMode('chaos')"><span class="pong-icon pong-icon-chaos" aria-hidden="true"></span><span>Chaos</span></button>
+      <button class="opt-btn" data-gm="bricks"  onclick="setGameMode('bricks')"><span class="pong-icon pong-icon-bricks" aria-hidden="true"></span><span>Bricks</span></button>
+      <button class="opt-btn" data-gm="survival" onclick="setGameMode('survival')"><span class="pong-icon pong-icon-survival" aria-hidden="true"></span><span>Survival</span></button>
+    </div>
+
+    <span class="setup-label" id="lbl-match">Match</span>
+    <div class="seg" id="match-opts" role="group" aria-labelledby="lbl-match">
+      <button class="opt-btn" data-match="1" onclick="setMatch(1)">Single game</button>
+      <button class="opt-btn" data-match="3" onclick="setMatch(3)">Best of 3</button>
+      <button class="opt-btn" data-match="5" onclick="setMatch(5)">Best of 5</button>
+    </div>
+
+    <span class="setup-label" id="lbl-score">First to</span>
+    <div class="seg" id="score-opts" role="group" aria-labelledby="lbl-score">
+      <button class="opt-btn" data-score="5"  onclick="setWin(5)">5</button>
+      <button class="opt-btn" data-score="7"  onclick="setWin(7)">7</button>
+      <button class="opt-btn" data-score="10" onclick="setWin(10)">10</button>
+    </div>
+
+    <span class="setup-label" id="lbl-diff">AI</span>
+    <div class="seg" id="diff-opts" role="group" aria-labelledby="lbl-diff">
+      <button class="opt-btn" data-diff="easy"   onclick="setDiff('easy')">Easy</button>
+      <button class="opt-btn" data-diff="medium" onclick="setDiff('medium')">Medium</button>
+      <button class="opt-btn" data-diff="hard"   onclick="setDiff('hard')">Hard</button>
+    </div>
+
+    <span class="setup-label">Players</span>
+    <div class="name-row">
+      <input class="name-input" id="name-left"  maxlength="10" placeholder="Player 1" value="Player 1" aria-label="Left player name">
+      <span  class="name-vs">vs</span>
+      <input class="name-input" id="name-right" maxlength="10" placeholder="Player 2" value="Player 2" aria-label="Right player name">
+    </div>
+
+    <span class="setup-label" id="lbl-skin">Skin</span>
+    <div class="skin-grid" id="skin-grid" role="group" aria-labelledby="lbl-skin"></div>
+  </section>
+
+  <div class="play-row">
+    <button class="btn btn-lg" id="btnai" onclick="startMatch('ai')">Play vs AI</button>
+    <button class="btn" id="btn2p" onclick="startMatch('2p')">2 players</button>
+    <button class="btn-o" id="btntourney" onclick="showTournamentSetup()">Tournament</button>
+    <button class="btn-o" id="btnonline" onclick="showOnlineLobby()">Online</button>
+  </div>
+  <div class="keys" aria-label="Controls">
+    <span><kbd>W</kbd><kbd>S</kbd> left paddle</span>
+    <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> right paddle</span>
+    <span><kbd>Space</kbd> serve</span>
+    <span><kbd>P</kbd> pause</span>
   </div>
 
-  <div class="sub">your names</div>
-  <div class="name-row">
-    <input class="name-input" id="name-left"  maxlength="10" placeholder="Player 1" value="Player 1">
-    <span  class="name-vs">vs</span>
-    <input class="name-input" id="name-right" maxlength="10" placeholder="Player 2" value="Player 2">
-  </div>
-
-  <hr class="menu-hr">
-  <div class="sub">choose your skin</div>
-  <div class="skin-grid" id="skin-grid"></div>
-
-  <hr class="menu-hr">
-  <div class="menu-label">MODE</div>
-  <div class="row" id="gamemode-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
-    <button class="opt-btn" data-gm="classic" onclick="setGameMode('classic')">Classic</button>
-    <button class="opt-btn" data-gm="chaos"   onclick="setGameMode('chaos')"><span class="pong-icon pong-icon-chaos" aria-hidden="true"></span><span>Chaos</span></button>
-    <button class="opt-btn" data-gm="bricks"  onclick="setGameMode('bricks')"><span class="pong-icon pong-icon-bricks" aria-hidden="true"></span><span>Bricks</span></button>
-    <button class="opt-btn" data-gm="survival" onclick="setGameMode('survival')"><span class="pong-icon pong-icon-survival" aria-hidden="true"></span><span>Survival</span></button>
-  </div>
-
-  <div class="menu-label">FORMAT</div>
-  <div class="row" id="match-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
-    <button class="opt-btn" data-match="1" onclick="setMatch(1)">Single</button>
-    <button class="opt-btn" data-match="3" onclick="setMatch(3)">Best of 3</button>
-    <button class="opt-btn" data-match="5" onclick="setMatch(5)">Best of 5</button>
-  </div>
-
-  <div class="menu-label">FIRST TO</div>
-  <div class="row" id="score-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
-    <button class="opt-btn" data-score="5"  onclick="setWin(5)">5</button>
-    <button class="opt-btn" data-score="7"  onclick="setWin(7)">7</button>
-    <button class="opt-btn" data-score="10" onclick="setWin(10)">10</button>
-  </div>
-
-  <div class="menu-label">DIFFICULTY</div>
-  <div class="row" id="diff-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
-    <button class="opt-btn" data-diff="easy"   onclick="setDiff('easy')">Easy</button>
-    <button class="opt-btn" data-diff="medium" onclick="setDiff('medium')">Medium</button>
-    <button class="opt-btn" data-diff="hard"   onclick="setDiff('hard')">Hard</button>
-  </div>
-
-  <hr class="menu-hr">
-  <div class="sub sub-cta" style="margin-top:2px;">choose mode</div>
-  <div class="row">
-    <button class="btn" id="btn2p" onclick="startMatch('2p')" aria-label="Start 2 player game">2 Players</button>
-    <button class="btn" id="btnai" onclick="startMatch('ai')" aria-label="Start game versus AI">vs AI</button>
-    <button class="btn" id="btntourney" onclick="showTournamentSetup()" aria-label="Start tournament"><span class="pong-icon pong-icon-trophy" aria-hidden="true"></span><span>Tournament</span></button>
-    <button class="btn" id="btnonline" onclick="showOnlineLobby()" aria-label="Play online"><span class="pong-icon pong-icon-globe" aria-hidden="true"></span><span>Online</span></button>
-  </div>
-  <div class="hint">W/S = left &nbsp;|&nbsp; arrows = right &nbsp;|&nbsp; P = pause<br>aim with W/S or ↑/↓ &nbsp;|&nbsp; space = serve</div>
-
-  <hr class="menu-hr">
-  <div class="sub" id="lb-title" style="margin-top:6px;">hall of fame</div>
-  <div id="lb-tabs" style="display:flex;gap:6px;margin:6px 0;">
-    <button class="lb-tab active" onclick="switchLbTab('classic')">Classic</button>
-    <button class="lb-tab" onclick="switchLbTab('chaos')">Chaos</button>
-    <button class="lb-tab" onclick="switchLbTab('bricks')">Bricks</button>
-    <button class="lb-tab" onclick="switchLbTab('survival')">Survival</button>
-  </div>
-  <div id="lboard"></div>
+  <section class="fame" aria-labelledby="lb-title">
+    <div class="fame-head">
+      <h2 id="lb-title">Hall of fame</h2>
+      <div id="lb-tabs" role="tablist">
+        <button class="lb-tab active" onclick="switchLbTab('classic')">Classic</button>
+        <button class="lb-tab" onclick="switchLbTab('chaos')">Chaos</button>
+        <button class="lb-tab" onclick="switchLbTab('bricks')">Bricks</button>
+        <button class="lb-tab" onclick="switchLbTab('survival')">Survival</button>
+      </div>
+    </div>
+    <div id="lboard"></div>
+  </section>
 </div>
 
 <!-- ── GAME ── -->
@@ -103,15 +112,17 @@
   </div>
   <div id="bar">
     <span id="mlabel"></span>
-    <button class="btn-o" id="pbtn"    onclick="togglePause()" aria-label="Pause game">Pause</button>
-    <div class="vol-wrap">
-      <button class="btn-o" id="mutebtn" onclick="toggleMute()" aria-label="Toggle mute">🔊</button>
-      <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)" aria-label="Volume">
+    <div class="bar-actions">
+      <button class="btn-o" id="pbtn"    onclick="togglePause()" aria-label="Pause game">Pause</button>
+      <div class="vol-wrap">
+        <button class="btn-o" id="mutebtn" onclick="toggleMute()" aria-label="Toggle sound">Sound</button>
+        <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)" aria-label="Volume">
+      </div>
+      <span id="online-ping" style="display:none;"></span>
+      <button class="btn-o" id="menubtn" onclick="showMenu()" aria-label="Return to menu">Menu</button>
     </div>
-    <span id="online-ping" style="display:none;font-size:10px;opacity:.4;font-family:monospace;"></span>
-    <button class="btn-o" onclick="showMenu()" aria-label="Return to menu">Menu</button>
   </div>
-  <div id="kb-legend">W/S left · ↑/↓ right · P pause · +/− volume · space serve · aim W/S ↑↓ · T test panel</div>
+  <div id="kb-legend" class="keys" aria-label="Controls"></div>
   <div id="score-live" aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);"></div>
 </div>
 <!-- ── TEST MODE PANEL ── -->
@@ -146,8 +157,8 @@
     <button class="btn" id="rabtn" onclick="nextSetOrEnd()">Continue</button>
     <button class="btn" id="rmbtn" onclick="showMenu()">Menu</button>
   </div>
-  <div id="badge-pop" style="margin-top:6px;text-align:center;font-family:monospace;font-size:11px;letter-spacing:1px;"></div>
-  <div class="hint" id="rspace-hint" style="margin-top:4px;">or press space</div>
+  <div id="badge-pop"></div>
+  <div class="hint" id="rspace-hint" style="margin-top:4px;">or press Space</div>
 </div>
 
 <!-- ── MATCH OVER ── -->
@@ -158,7 +169,7 @@
     <button class="btn" id="mrabtn" onclick="startMatch(lastMode)">Rematch</button>
     <button class="btn" id="mrmbtn" onclick="showMenu()">Menu</button>
   </div>
-  <div class="hint" style="margin-top:4px;">or press space for rematch</div>
+  <div class="hint" style="margin-top:4px;">or press Space for a rematch</div>
 </div>
 
 <!-- ── SURVIVAL TURN TRANSITION ── -->
@@ -169,13 +180,13 @@
     <button class="btn" id="surv-go-btn" onclick="survStartTurn()">Start</button>
     <button class="btn" onclick="showMenu()">Menu</button>
   </div>
-  <div class="hint" style="margin-top:4px;">press space to start</div>
+  <div class="hint" style="margin-top:4px;">Press Space to start</div>
 </div>
 
 <!-- ── TOURNAMENT SETUP ── -->
 <div id="tourney-setup" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:500px;">
   <div class="wtitle">Tournament</div>
-  <div class="sub">add players (2-8)</div>
+  <div class="sub">Add 2 to 8 players</div>
   <div id="tourney-players" style="display:flex;flex-direction:column;gap:6px;width:100%;max-width:360px;"></div>
   <div class="row" style="margin-top:4px;">
     <button class="btn-o" id="tourney-add-human" onclick="tourneyAddPlayer(false)">+ Player</button>
@@ -216,10 +227,10 @@
   <div class="wtitle">Play Online</div>
 
   <div id="online-choice" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <div class="sub">challenge a friend</div>
-    <div class="menu-label">YOUR NAME</div>
-    <input class="name-input" id="online-name" maxlength="16" placeholder="enter your name" style="text-align:center;font-size:14px;width:200px;">
-    <div id="online-turn-status" style="font-size:11px;letter-spacing:1px;"></div>
+    <div class="sub">Challenge a friend</div>
+    <div class="menu-label">Your name</div>
+    <input class="name-input" id="online-name" maxlength="16" placeholder="Your name" aria-label="Your name">
+    <div id="online-turn-status" class="sub"></div>
     <div class="row" style="margin-top:4px;">
       <button class="btn" id="online-host-btn" onclick="onlineHost()">Create Game</button>
       <button class="btn" id="online-join-btn" onclick="onlineShowJoin()">Join Game</button>
@@ -228,36 +239,36 @@
   </div>
 
   <div id="online-hosting" style="display:none;flex-direction:column;align-items:center;gap:12px;">
-    <div class="sub">your room code</div>
-    <div id="online-room-code" style="font-size:36px;letter-spacing:8px;font-weight:bold;font-family:monospace;"></div>
-    <div class="sub" style="opacity:.4;">share this code with your friend</div>
+    <div class="sub">Your room code</div>
+    <div id="online-room-code"></div>
+    <div class="sub">Share this code with your friend.</div>
     <button class="btn-o" id="online-copy-btn" onclick="onlineCopyCode()">Copy Code</button>
-    <div class="sub" id="online-host-status">waiting for opponent...</div>
+    <div class="sub" id="online-host-status">Waiting for your opponent…</div>
     <button class="btn-o" onclick="onlineCancel()">Cancel</button>
   </div>
 
   <div id="online-joining" style="display:none;flex-direction:column;align-items:center;gap:12px;">
-    <div class="sub">enter room code</div>
-    <input class="name-input" id="online-code-input" maxlength="6" placeholder="XXXXX" style="text-align:center;font-size:24px;letter-spacing:6px;text-transform:uppercase;width:200px;">
+    <div class="sub">Enter the room code</div>
+    <input class="name-input" id="online-code-input" maxlength="6" placeholder="XXXXX" aria-label="Room code">
     <div class="row">
       <button class="btn" id="online-connect-btn" onclick="onlineJoin()">Connect</button>
       <button class="btn-o" onclick="onlineShowChoice()">Back</button>
     </div>
-    <div class="sub" id="online-join-status" style="opacity:.6;"></div>
+    <div class="sub" id="online-join-status"></div>
   </div>
 
   <div id="online-pregame" style="display:none;flex-direction:column;align-items:center;gap:12px;">
-    <div class="sub">connected!</div>
-    <div id="online-opponent-name" style="font-size:16px;font-family:monospace;"></div>
+    <div class="sub">Connected</div>
+    <div id="online-opponent-name"></div>
     <div id="online-host-settings">
-      <div class="menu-label">MODE</div>
-      <div class="row" id="online-gamemode-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
+      <div class="menu-label">Mode</div>
+      <div class="seg" id="online-gamemode-opts">
         <button class="opt-btn sel" data-gm="classic" onclick="onlineSetMode('classic')">Classic</button>
         <button class="opt-btn" data-gm="chaos" onclick="onlineSetMode('chaos')">Chaos</button>
         <button class="opt-btn" data-gm="bricks" onclick="onlineSetMode('bricks')">Bricks</button>
       </div>
-      <div class="menu-label">FIRST TO</div>
-      <div class="row" id="online-score-opts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;">
+      <div class="menu-label">First to</div>
+      <div class="seg" id="online-score-opts">
         <button class="opt-btn" data-score="5" onclick="onlineSetWin(5)">5</button>
         <button class="opt-btn sel" data-score="7" onclick="onlineSetWin(7)">7</button>
         <button class="opt-btn" data-score="10" onclick="onlineSetWin(10)">10</button>
@@ -265,7 +276,7 @@
       <button class="btn" onclick="onlineStartGame()">Start Match</button>
     </div>
     <div id="online-guest-wait" style="display:none;">
-      <div class="sub" id="online-guest-settings-label">host is choosing settings...</div>
+      <div class="sub" id="online-guest-settings-label">The host is choosing settings…</div>
     </div>
     <button class="btn-o" onclick="onlineCancel()">Leave</button>
   </div>
@@ -274,18 +285,18 @@
 </div><!-- #pw -->
 
 <!-- ── DISCONNECT OVERLAY ── -->
-<div id="online-disconnect" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:monospace;text-align:center;">
-  <div style="font-size:18px;letter-spacing:2px;">CONNECTION LOST</div>
-  <div style="font-size:12px;opacity:.5;">your opponent disconnected</div>
+<div id="online-disconnect" class="notice" style="display:none;z-index:9998;">
+  <div class="notice-title">Connection lost</div>
+  <div class="notice-text">Your opponent disconnected.</div>
   <button class="btn" onclick="onlineDismissDisconnect()">Back to Menu</button>
 </div>
 
 <!-- ── LANDSCAPE PROMPT (mobile only, during gameplay) ── -->
-<div id="rotate-prompt" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:monospace;text-align:center;padding:24px;">
+<div id="rotate-prompt" class="notice" style="display:none;z-index:9999;">
   <div style="font-size:48px;animation:rotateNudge 1.5s ease-in-out infinite;">📱</div>
-  <div style="font-size:16px;letter-spacing:2px;">ROTATE YOUR PHONE</div>
-  <div style="font-size:11px;opacity:.5;max-width:260px;">landscape mode recommended for the best gameplay experience</div>
-  <button class="btn" onclick="dismissRotatePrompt()" style="margin-top:8px;font-size:11px;padding:8px 20px;">PLAY IN PORTRAIT ANYWAY</button>
+  <div class="notice-title">Turn your phone sideways</div>
+  <div class="notice-text">The court fits much better in landscape.</div>
+  <button class="btn-o" onclick="dismissRotatePrompt()">Play in portrait</button>
 </div>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="js/01-audio.js"></script>

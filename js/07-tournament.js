@@ -11,15 +11,7 @@ function hideAllTourneyScreens(){TOURNEY_SCREENS.forEach(id=>document.getElement
 function showTournamentSetup(){
   hideAllTourneyScreens();
   ['menu','game-over','match-over','game-ui','surv-turn'].forEach(id=>document.getElementById(id).style.display='none');
-  const sk=SKINS[currentSkin];
-  ['pw','tourney-setup'].forEach(id=>{
-    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
   document.getElementById('tourney-setup').style.display='flex';
-  // Apply skin colors to buttons inside setup
-  document.querySelectorAll('#tourney-setup .btn-o, #tourney-setup .btn, #tourney-setup .tp-rm').forEach(b=>{b.style.color=sk.menuFg;b.style.borderColor=sk.menuFg;});
-  document.querySelectorAll('#tourney-setup .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   // Seed with existing names if empty
   if(!tourney||!tourney.players||tourney.players.length<2){
     usedBotNames=[];
@@ -155,15 +147,7 @@ function tourneyPropagate(){
 function showTourneyBracket(){
   hideAllTourneyScreens();
   ['menu','game-over','match-over','game-ui','surv-turn'].forEach(id=>document.getElementById(id).style.display='none');
-  const sk=SKINS[currentSkin];
-  ['pw','tourney-bracket'].forEach(id=>{
-    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
   document.getElementById('tourney-bracket').style.display='flex';
-  // Apply skin colors to buttons
-  document.querySelectorAll('#tourney-bracket .btn-o').forEach(b=>{b.style.color=sk.menuFg;b.style.borderColor=sk.menuFg;});
-  document.querySelectorAll('#tourney-bracket .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   tourneyRenderBracket('tourney-bracket-grid');
   // Find next match
   const next=tourney.matches.find(m=>!m.winner&&m.p1&&m.p2);
@@ -182,19 +166,17 @@ function showTourneyBracket(){
 
 function tourneyRenderBracket(containerId){
   const cont=document.getElementById(containerId);
-  const sk=SKINS[currentSkin];
   let html='<div class="bracket">';
   const next=tourney.matches.find(m=>!m.winner&&m.p1&&m.p2);
   for(let r=0;r<tourney.rounds;r++){
     const roundMatches=tourney.matches.filter(m=>m.round===r);
-    const label=r===tourney.rounds-1?'FINAL':r===tourney.rounds-2?'SEMIS':`ROUND ${r+1}`;
+    const label=r===tourney.rounds-1?'Final':r===tourney.rounds-2?'Semi-finals':`Round ${r+1}`;
     html+=`<div class="bracket-round"><div class="bracket-round-label">${label}</div>`;
     for(const m of roundMatches){
       const isActive=next&&m===next;
       const isDone=!!m.winner;
       const cls='bracket-match'+(isActive?' active':'')+(isDone&&!isActive?' done':'');
-      const border=isActive?'border-color:#f59e0b':`border-color:${sk.menuFg}33`;
-      html+=`<div class="${cls}" style="${border}">`;
+      html+=`<div class="${cls}">`;
       if(m.p1){
         const w=m.winner&&m.winner===m.p1?'winner':(m.winner?'loser':'');
         html+=`<div class="bm-p ${w}"><span>${escapeHtml(m.p1.name)}${m.p1.isAI?' 🤖':''}</span>${m.score&&m.score!=='BYE'?`<span>${m.winner===m.p1?'✓':''}</span>`:''}</div>`;
@@ -271,22 +253,13 @@ function tourneyCancel(){
 function showTourneyWinner(){
   hideAllTourneyScreens();
   ['menu','game-over','match-over','game-ui','surv-turn','tourney-bracket'].forEach(id=>document.getElementById(id).style.display='none');
-  const sk=SKINS[currentSkin];
-  ['pw','tourney-winner'].forEach(id=>{
-    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
   const finalMatch=tourney.matches[tourney.matches.length-1];
   const champion=finalMatch.winner;
   document.getElementById('tourney-win-txt').textContent=`${champion.name} wins the tournament!`;
-  document.getElementById('tourney-win-txt').style.color=sk.menuFg;
   // Count matches won (not byes)
   const matchesWon=tourney.matches.filter(m=>m.winner===champion&&m.score!=='BYE').length;
-  document.getElementById('tourney-win-stats').textContent=`${tourney.players.length} players · ${matchesWon} match${matchesWon>1?'es':''} won · ${gameMode} mode`;
-  document.getElementById('tourney-win-stats').style.color=sk.menuFg;
+  document.getElementById('tourney-win-stats').textContent=`${tourney.players.length} players, ${matchesWon} match${matchesWon>1?'es':''} won in ${gameMode} mode`;
   document.getElementById('tourney-winner').style.display='flex';
-  // Apply skin colors to buttons
-  document.querySelectorAll('#tourney-winner .btn').forEach(b=>{b.style.background=sk.menuFg;b.style.color=sk.menuBg;});
   tourneyRenderBracket('tourney-bracket-final');
   // Play win sound
   SOUNDS[currentSkin].gameWin(true);

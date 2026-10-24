@@ -142,7 +142,6 @@ function showOnlineLobby(){
   // Restore saved player name
   const saved=localStorage.getItem('pong-online-name')||'';
   if(_olEl['online-name']) _olEl['online-name'].value=saved;
-  _olEl['online-lobby'].style.color=SKINS[currentSkin].menuFg;
   applyMenuSkin();
 }
 
