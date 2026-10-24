@@ -36,10 +36,7 @@ function startSet(){
   document.getElementById('match-over').style.display='none';
   document.getElementById('game-ui').style.display='flex';
   setPongButton('pbtn',paused?'play':'pause',paused?'Resume':'Pause');
-  const modeName=gameMode[0].toUpperCase()+gameMode.slice(1);
-  const setInfo=matchFormat>1?`, set ${currentSet} (best of ${matchFormat})`:'';
-  document.getElementById('mlabel').textContent=`${modeName}, first to ${winScore}${setInfo}`;
-  setKeyLegend('kb-legend',[[['W','S'],'left paddle'],[['\u2191','\u2193'],'right paddle'],[['Space'],'serve'],[['P'],'pause']]);
+  setGameLabels();
   applyGameSkin();
   state=initGameState();keys={};lastFrameTime=0;
   if(animId)cancelAnimationFrame(animId);
@@ -47,6 +44,16 @@ function startSet(){
   if(!paused)animId=requestAnimationFrame(update);
   enterGameplay();
   fitCanvasToViewport();
+}
+
+// Mode line and key legend under the canvas (also used by the online guest)
+function setGameLabels(){
+  const modeName=gameMode[0].toUpperCase()+gameMode.slice(1);
+  const setInfo=matchFormat>1?`, set ${currentSet} (best of ${matchFormat})`:'';
+  document.getElementById('mlabel').textContent=`${modeName}, first to ${winScore}${setInfo}`;
+  // One player per keyboard: W/S and the arrows both move your paddle
+  const move=mode==='ai'||mode==='online'?[[['W','S','\u2191','\u2193'],'move']]:[[['W','S'],'left paddle'],[['\u2191','\u2193'],'right paddle']];
+  setKeyLegend('kb-legend',[...move,[['Space'],'serve'],[['P'],'pause']]);
 }
 
 function beginServe(side){
@@ -95,9 +102,12 @@ function showMenu(){
   exitGameplay();
 }
 
-function togglePause(){
+function togglePause(fromNet){
   paused=!paused;
   setPongButton('pbtn',paused?'play':'pause',paused?'Resume':'Pause');
+  // Online: pause both players together. The guest never runs physics; its render loop just holds the ball.
+  if(onlineRole&&!fromNet&&onlineConn&&onlineConn.open)onlineConn.send({type:'pause',on:paused});
+  if(onlineRole==='guest')return;
   if(!paused){lastFrameTime=0;animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);}
 }
 

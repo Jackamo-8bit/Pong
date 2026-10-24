@@ -472,6 +472,7 @@ function onlineStartGame(){
              skin:currentSkin,nameLeft,nameRight,matchFormat:1};
   onlineConn.send(msg);
   _onlineApplySettings(msg);
+  _lastBricksAlive=-1; // new layout: always send it, even if the brick count matches the last game
   _olEl['online-lobby'].style.display='none';
   startMatch('online');
   _startPing();
@@ -489,13 +490,15 @@ function _onlineApplySettings(data){
 // Shared helper: set up guest game state (used by gameStart and rematch)
 function _guestEnterGame(data){
   _onlineApplySettings(data);
+  mode='online'; currentSet=1;
   state=initGameState(); keys={}; lastFrameTime=0;
   document.getElementById('game-over').style.display='none';
   document.getElementById('match-over').style.display='none';
   document.getElementById('menu').style.display='none';
   document.getElementById('game-ui').style.display='flex';
-  applyGameSkin(); enterGameplay(); fitCanvasToViewport();
+  applyGameSkin(); setGameLabels(); enterGameplay(); fitCanvasToViewport();
   serving=true; serveSide='left'; countdown=3;
+  playCountdownBeep(3);
   _guestAnimId=requestAnimationFrame(guestRenderLoop);
 }
 
@@ -517,7 +520,11 @@ function onlineHostReceive(data){
       _updatePingDisplay();
       break;
     case 'rematchReq':
-      onlineStartGame();
+      // Both players may press Continue; only the first one starts the next game
+      if(document.getElementById('game-over').style.display==='flex') onlineStartGame();
+      break;
+    case 'pause':
+      if(paused!==data.on) togglePause(true);
       break;
   }
 }
@@ -601,15 +608,21 @@ function onlineGuestReceive(data){
       break;
     case 'ping':
       if(onlineConn&&onlineConn.open) onlineConn.send({type:'pong',t:data.t,rt:performance.now()});
+      if(data.rtt){onlineRTT=data.rtt;_updatePingDisplay();}
+      break;
+    case 'pause':
+      if(paused!==data.on) togglePause(true);
       break;
   }
 }
 
-const _soundMap={paddle:'paddle',wall:'wall',brick:'brick',serve:'serve',score:'score',gameWin:'gameWin'};
+// Host sounds replayed on the guest; score/win are flipped since the host plays them from its own side
 function _playRemoteSound(name,args){
   try{
-    const fn=SOUNDS[currentSkin][_soundMap[name]];
-    if(fn) fn(args&&args[0]);
+    const fn=SOUNDS[currentSkin][name];
+    if(!fn) return;
+    const a=args&&args[0];
+    fn((name==='score'||name==='gameWin')?!a:a);
   }catch(e){}
 }
 
@@ -645,6 +658,7 @@ function guestApplyState(data){
   _netTargets.ballX=data.ball.x; _netTargets.ballY=data.ball.y;
 
   // Game state flags
+  if(data.serving&&data.countdown!==countdown) playCountdownBeep(data.countdown); // host beeps on each change
   serving=data.serving; serveSide=data.serveSide; countdown=data.countdown;
   rallyHits=data.rh; shakeAmt=data.sa; chaosHue=data.ch;
   shieldSide=data.ss;
@@ -675,7 +689,7 @@ function guestRenderLoop(){
   const dt=Math.min((now-_guestLastFrame)/TARGET_FRAME_MS,3);
   _guestLastFrame=now;
 
-  if(state){
+  if(state&&!paused){
     // ── Own paddle: fully local, instant response ──
     const ph=getPH('right'), SPD=5;
     if(touchY.right!==null){
@@ -732,7 +746,7 @@ function _startPing(){
   _stopPing();
   if(onlineRole==='host'){
     _onlinePingInterval=setInterval(()=>{
-      if(onlineConn&&onlineConn.open) onlineConn.send({type:'ping',t:performance.now()});
+      if(onlineConn&&onlineConn.open) onlineConn.send({type:'ping',t:performance.now(),rtt:onlineRTT});
     },2000);
   }
   const el=_olEl['online-ping']||document.getElementById('online-ping');
@@ -792,6 +806,7 @@ function onlineRematch(){
   if(onlineRole==='host'&&onlineConn&&onlineConn.open){
     const msg={type:'rematch',gameMode,winScore,skin:currentSkin,nameLeft,nameRight,matchFormat:1};
     onlineConn.send(msg);
+    _lastBricksAlive=-1;
     document.getElementById('game-over').style.display='none';
     document.getElementById('match-over').style.display='none';
     startMatch('online');
