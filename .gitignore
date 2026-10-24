@@ -1,0 +1,9 @@
+# macOS Finder metadata
+.DS_Store
+
+# Local tool settings
+.claude/
+.impeccable/
+
+# Icon design artwork (kept locally, not part of the game build)
+Pong Icon Images/
