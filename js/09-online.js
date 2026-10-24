@@ -546,7 +546,6 @@ function onlineSendState(now){
     fpu:fieldPowerups.map(p=>({type:p.type,x:p.x,y:p.y,bo:p.bobOffset,st:p.spawnTime})),
     db:decoyBalls.map(d=>({x:d.x,y:d.y,vx:d.vx,vy:d.vy,spin:d.spin||0})),
     ss:shieldSide, rh:rallyHits, sa:shakeAmt, ch:chaosHue,
-    dp:defenderPaddle?{side:defenderPaddle.side,y:defenderPaddle.y,x:defenderPaddle.x,h:defenderPaddle.h}:null,
     pa:portalA, pb:portalB
   };
 
@@ -649,7 +648,7 @@ function guestApplyState(data){
   serving=data.serving; serveSide=data.serveSide; countdown=data.countdown;
   rallyHits=data.rh; shakeAmt=data.sa; chaosHue=data.ch;
   shieldSide=data.ss;
-  defenderPaddle=data.dp; portalA=data.pa; portalB=data.pb;
+  portalA=data.pa; portalB=data.pb;
 
   // Power-ups and decoys
   activePowerups=data.apu.map(p=>({type:p.type,side:p.side,startTime:p.st,endTime:p.et}));

@@ -2,8 +2,8 @@
 // INIT / MATCH FLOW
 // ═══════════════════════════════════════════════════════════════════
 function initGameState(){
-  particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];leadPreSpeed=null;rallyHits=0;prevRallyHits=0;aiError=0;aiErrorLeft=0;aiErrorRight=0;
-  shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;blackholePos=null;
+  particles=[];decoyBalls=[];fieldPowerups=[];activePowerups=[];rallyHits=0;prevRallyHits=0;aiError=0;aiErrorLeft=0;aiErrorRight=0;
+  shieldSide=null;portalA=null;portalB=null;blackholePos=null;
   bricks=[];
   if(gameMode==='bricks')buildBricks();
   const gs={left:{y:H/2-PH/2,score:0},right:{y:H/2-PH/2,score:0},ball:{x:W/2,y:H/2,vx:0,vy:0,size:10,curve:0,spin:0,_portalCooldown:0},_maxDeficit:{left:0,right:0}};
@@ -73,7 +73,7 @@ function resetBall(loser){
   state.ball.x=W/2;state.ball.y=H/2;
   state.ball.vx=0;state.ball.vy=0;
   state.ball.size=10;state.ball.curve=0;state.ball.spin=0;state.ball._portalCooldown=false;ballTrail=[];
-  decoyBalls=[];leadPreSpeed=null;defenderPaddle=null;portalA=null;portalB=null;
+  decoyBalls=[];portalA=null;portalB=null;
   if(activePowerups.length)clearAllPowerups();
   fieldPowerups=[];
   nextPuSpawn=performance.now()+(gameMode==='chaos'?CHAOS_SPAWN_INTERVAL:POWERUP_SPAWN_INTERVAL);
@@ -459,16 +459,15 @@ function updateFrame(){
     if(now>=activePowerups[i].endTime){clearSinglePU(activePowerups[i]);activePowerups.splice(i,1);}
   }
   // Cache power-up lookups for this frame
-  const _puCurve=hasAPU('curve'),_puLead=hasAPU('lead'),_puBouncy=hasAPU('bouncy');
+  const _puCurve=hasAPU('curve');
   const _puDecoy=hasAPU('decoy'),_puPortal=hasAPU('portal'),_puGhost=hasAPU('ghost'),_puFreeze=hasAPU('freeze');
-  const magnetPU=getAPU('magnet'),cpPU=getAPU('curvedpaddle');
+  const magnetPU=getAPU('magnet');
 
   let BS=getBallSize();
   if(gameMode==='chaos'&&Math.random()<.003)BS=Math.max(6,Math.min(22,BS+(Math.random()*6-3)));
   s.ball.size=BS;
   // Apply ongoing power-up effects
   if(_puCurve){s.ball.curve=(s.ball.curve||0)+.07*dt;s.ball.vy+=Math.sin(s.ball.curve*.6)*.12*dt;}
-  if(_puLead){const sp=Math.sqrt(s.ball.vx**2+s.ball.vy**2);if(sp>3){const ld=Math.pow(.995,dt);s.ball.vx*=ld;s.ball.vy*=ld;}}
   if(magnetPU){
     const mSide=magnetPU.side;
     const returning=(mSide==='left'&&s.ball.vx<0)||(mSide==='right'&&s.ball.vx>0);
@@ -490,72 +489,20 @@ function updateFrame(){
   if(ballTrail.length>12)ballTrail.shift();
 
   // Wall bounces
-  const bm=_puBouncy?1.08:1;
-  if(s.ball.y<=0){s.ball.y=0;s.ball.vy=Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
-  if(s.ball.y+BS>=H){s.ball.y=H-BS;s.ball.vy=-Math.abs(s.ball.vy)*bm;SOUNDS[currentSkin].wall();shakeAmt=2;}
+  if(s.ball.y<=0){s.ball.y=0;s.ball.vy=Math.abs(s.ball.vy);SOUNDS[currentSkin].wall();shakeAmt=2;}
+  if(s.ball.y+BS>=H){s.ball.y=H-BS;s.ball.vy=-Math.abs(s.ball.vy);SOUNDS[currentSkin].wall();shakeAmt=2;}
 
   // Paddle collisions (with swept check to prevent tunneling at high speeds)
   const LP=24,RP=W-24-PW,leftPH=getPH('left'),rightPH=getPH('right');
   const prevBX=s.ball.x-s.ball.vx*dt; // previous frame x position
-  // Curved paddle: opponent's paddle gets a curved arc surface
-  const curvedL=cpPU&&cpPU.side!=='left';
-  const curvedR=cpPU&&cpPU.side!=='right';
-
-  // Arc collision for curved paddles — ball bounces off the visual arc surface
-  let curvedHitL=false,curvedHitR=false;
-  if(curvedL&&s.ball.vx<0){
-    const arcCX=LP+PW+12,arcCY=s.left.y+leftPH/2,arcR=leftPH*0.6;
-    const bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
-    const dx=bcx-arcCX,dy=bcy-arcCY,dist=Math.sqrt(dx*dx+dy*dy);
-    const ang=Math.atan2(dy,dx);
-    if(dist<arcR+BS/2+2&&ang>=-Math.PI*0.45&&ang<=Math.PI*0.45){
-      curvedHitL=true;
-      const nx=dx/dist,ny=dy/dist;
-      s.ball.x=arcCX+nx*(arcR+BS/2+1)-BS/2;
-      s.ball.y=arcCY+ny*(arcR+BS/2+1)-BS/2;
-      rallyHits++;rallyPopT=performance.now();
-      if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
-      const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
-      s.ball.vx=Math.abs(nx)*spd;if(s.ball.vx<spd*0.2)s.ball.vx=spd*0.2;
-      s.ball.vy=ny*spd;
-      s.ball.spin=ny*0.25;
-      if(_puCurve)s.ball.curve=0;
-      spawnParticles(s.ball.x,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
-      lastBrickToucher='left';
-      checkFieldPuCollect('left',now);
-    }
-  }
-  if(curvedR&&s.ball.vx>0){
-    const arcCX=RP-12,arcCY=s.right.y+rightPH/2,arcR=rightPH*0.6;
-    const bcx=s.ball.x+BS/2,bcy=s.ball.y+BS/2;
-    const dx=bcx-arcCX,dy=bcy-arcCY,dist=Math.sqrt(dx*dx+dy*dy);
-    const ang=Math.atan2(dy,dx);
-    if(dist<arcR+BS/2+2&&(ang>=Math.PI*0.55||ang<=-Math.PI*0.55)){
-      curvedHitR=true;
-      const nx=dx/dist,ny=dy/dist;
-      s.ball.x=arcCX+nx*(arcR+BS/2+1)-BS/2;
-      s.ball.y=arcCY+ny*(arcR+BS/2+1)-BS/2;
-      rallyHits++;rallyPopT=performance.now();
-      if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
-      const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
-      s.ball.vx=-Math.abs(nx)*spd;if(s.ball.vx>-spd*0.2)s.ball.vx=-spd*0.2;
-      s.ball.vy=ny*spd;
-      s.ball.spin=ny*0.25;
-      if(_puCurve)s.ball.curve=0;
-      spawnParticles(s.ball.x+BS,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
-      lastBrickToucher='right';
-      checkFieldPuCollect('right',now);
-    }
-  }
-
-  // Left paddle: flat collision (skipped if arc already handled it)
+  // Left paddle
   const leftEdge=LP+PW;
   const crossedLeft=s.ball.vx<0&&prevBX>=leftEdge&&s.ball.x<=leftEdge;
-  if(!curvedHitL&&s.ball.vx<0&&(crossedLeft||s.ball.x<=LP+PW&&s.ball.x>=LP-2)&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
+  if(s.ball.vx<0&&(crossedLeft||s.ball.x<=LP+PW&&s.ball.x>=LP-2)&&s.ball.y+BS>=s.left.y&&s.ball.y<=s.left.y+leftPH){
     s.ball.x=LP+PW;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.left.y+leftPH/2))/(leftPH/2);
-    const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
+    const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
     if(_puCurve)s.ball.curve=0;
@@ -563,14 +510,14 @@ function updateFrame(){
     lastBrickToucher='left';
     checkFieldPuCollect('left',now);
   }
-  // Right paddle: flat collision (skipped if arc already handled it)
+  // Right paddle
   const rightEdge=RP;
   const crossedRight=s.ball.vx>0&&prevBX+BS<=rightEdge&&s.ball.x+BS>=rightEdge;
-  if(!curvedHitR&&s.ball.vx>0&&(crossedRight||s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4)&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
+  if(s.ball.vx>0&&(crossedRight||s.ball.x+BS>=RP&&s.ball.x+BS<=RP+PW+4)&&s.ball.y+BS>=s.right.y&&s.ball.y<=s.right.y+rightPH){
     s.ball.x=RP-BS;rallyHits++;rallyPopT=performance.now();
     if(rallyHits>sessionRallyPB)sessionRallyPB=rallyHits;
     const rel=(s.ball.y+BS/2-(s.right.y+rightPH/2))/(rightPH/2);
-    const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)*bm+rallySpeedBonus(rallyHits),MAX_SPEED);
+    const spd=Math.min(Math.sqrt(s.ball.vx**2+s.ball.vy**2)+rallySpeedBonus(rallyHits),MAX_SPEED);
     s.ball.vx=-Math.abs(Math.cos(rel*.8)*spd);s.ball.vy=Math.sin(rel*.8)*spd;
     s.ball.spin=rel*0.35;
     if(_puCurve)s.ball.curve=0;
@@ -608,24 +555,6 @@ function updateFrame(){
     }else if(daB<portalR+BS/2&&s.ball._portalCooldown<=0){
       s.ball.x=portalA.x-BS/2;s.ball.y=portalA.y-BS/2;s.ball._portalCooldown=12;
       shakeAmt=4;spawnPuParticles(portalA.x,portalA.y);SOUNDS[currentSkin].wall();
-    }
-  }
-
-  // Defender paddle AI + collision
-  if(defenderPaddle){
-    const dp=defenderPaddle,dpH=dp.h,dpW=8;
-    const target=s.ball.y-dpH/2;
-    const dSpd=3.5;
-    if(Math.abs(dp.y+dpH/2-s.ball.y)>dSpd)dp.y+=(target>dp.y?1:-1)*dSpd;
-    dp.y=Math.max(0,Math.min(H-dpH,dp.y));
-    // Collision with defender paddle
-    if(dp.side==='left'&&s.ball.vx<0&&s.ball.x<=dp.x+dpW&&s.ball.x>=dp.x-2&&s.ball.y+BS>=dp.y&&s.ball.y<=dp.y+dpH){
-      s.ball.x=dp.x+dpW;s.ball.vx=Math.abs(s.ball.vx);
-      spawnParticles(dp.x+dpW,s.ball.y+BS/2,1);SOUNDS[currentSkin].paddle();shakeAmt=3;
-    }
-    if(dp.side==='right'&&s.ball.vx>0&&s.ball.x+BS>=dp.x&&s.ball.x+BS<=dp.x+dpW+4&&s.ball.y+BS>=dp.y&&s.ball.y<=dp.y+dpH){
-      s.ball.x=dp.x-BS;s.ball.vx=-Math.abs(s.ball.vx);
-      spawnParticles(dp.x,s.ball.y+BS/2,-1);SOUNDS[currentSkin].paddle();shakeAmt=3;
     }
   }
 

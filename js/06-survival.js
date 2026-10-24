@@ -56,7 +56,7 @@ function survInit(){
   const pw=130,ph=12;
   survDecoyBalls=[];survExtraBalls=[];
   fieldPowerups=[];activePowerups=[];
-  shieldSide=null;defenderPaddle=null;portalA=null;portalB=null;
+  shieldSide=null;portalA=null;portalB=null;
   survLaser=null;survFrozen=false;survBomb=false;survMagnetHeld=null;survFireball=false;
   particles=[];
   const bricks=[];
