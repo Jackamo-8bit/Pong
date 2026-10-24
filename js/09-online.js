@@ -728,7 +728,7 @@ function guestRenderLoop(){
   // Particles, effects, and drawing
   updateParticles(dt);
   shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.6*dt);
-  if(SKINS[currentSkin].chaos) chaosHue=(chaosHue+.8*dt)%360;
+  if(gameMode==='chaos') chaosHue=(chaosHue+.8*dt)%360;
   _drawDt=dt;
 
   if(serving) drawServe(now);

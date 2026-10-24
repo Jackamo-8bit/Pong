@@ -82,8 +82,7 @@ canvas{display:block;}
 .skin-btn{background:var(--night);border:0;cursor:pointer;padding:5px 5px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:17px;color:var(--mist);clip-path:var(--notch);box-shadow:inset 0 0 0 2px transparent;}
 .skin-btn:hover{color:var(--chalk);}
 .skin-btn.active{color:var(--chalk);box-shadow:inset 0 0 0 2px var(--accent);}
-.skin-preview{width:64px;height:40px;overflow:hidden;}
-.skin-preview svg{width:100%;height:100%;display:block;}
+.skin-preview{width:64px;height:40px;display:block;}
 
 .play-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;width:100%;}
 .play-row>*{grid-column:span 2;}
