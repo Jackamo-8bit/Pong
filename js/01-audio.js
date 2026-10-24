@@ -112,17 +112,17 @@ function playCountdownBeep(n){
 
 // Haptic feedback for mobile
 function haptic(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch{}}
-// Wrap a sound set so each call also triggers haptic feedback
+// Wrap a sound set so each call also triggers haptic feedback,
+// and an online host replays it on the guest (power-ups go via puPopup instead)
+const BUZZ={paddle:12,wall:8,brick:15,powerup:[20,10,20],score:40,gameWin:[30,20,30,20,50]};
 function withHaptics(snd){
-  return{
-    paddle:(...a)=>{haptic(12);snd.paddle(...a);},
-    wall:(...a)=>{haptic(8);snd.wall(...a);},
-    brick:(...a)=>{haptic(15);snd.brick(...a);},
-    powerup:(...a)=>{haptic([20,10,20]);snd.powerup(...a);},
-    serve:(...a)=>{snd.serve(...a);},
-    score:(...a)=>{haptic(40);snd.score(...a);},
-    gameWin:(...a)=>{haptic([30,20,30,20,50]);snd.gameWin(...a);}
+  const out={};
+  for(const k of Object.keys(snd))out[k]=(...a)=>{
+    if(BUZZ[k])haptic(BUZZ[k]);
+    if(k!=='powerup'&&onlineRole==='host'&&onlineConn&&onlineConn.open)onlineConn.send({type:'sound',name:k,args:a});
+    snd[k](...a);
   };
+  return out;
 }
 
 const SOUNDS={
