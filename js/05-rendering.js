@@ -4,70 +4,51 @@
 function drawDecoBg(sk){
   ctx.save();
   // Sunburst rays from center
-  ctx.strokeStyle=sk.fg;ctx.lineWidth=1;ctx.globalAlpha=.035;
+  ctx.strokeStyle=sk.fg;ctx.lineWidth=1;ctx.globalAlpha=.06;
   const cx=W/2,cy=H/2,maxR=Math.sqrt(W*W+H*H)/2;
   for(let i=0;i<24;i++){
     const a=i*Math.PI/12;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*maxR,cy+Math.sin(a)*maxR);ctx.stroke();
   }
   // Corner ornaments — stepped Art Deco brackets
-  ctx.strokeStyle=sk.fg;ctx.lineWidth=1;ctx.globalAlpha=.08;
+  ctx.strokeStyle=sk.fg;ctx.lineWidth=1;ctx.globalAlpha=.24;
   const co=6,cl=28,cs=14;
   [[co,co,1,1],[W-co,co,-1,1],[co,H-co,1,-1],[W-co,H-co,-1,-1]].forEach(([ox,oy,dx,dy])=>{
     ctx.beginPath();ctx.moveTo(ox,oy+dy*cl);ctx.lineTo(ox,oy);ctx.lineTo(ox+dx*cl,oy);ctx.stroke();
     ctx.beginPath();ctx.moveTo(ox+dx*4,oy+dy*cs);ctx.lineTo(ox+dx*4,oy+dy*4);ctx.lineTo(ox+dx*cs,oy+dy*4);ctx.stroke();
   });
   // Midline: chain of diamonds
-  ctx.fillStyle=sk.fg;ctx.globalAlpha=.12;
+  ctx.fillStyle=sk.fg;ctx.globalAlpha=.22;
   for(let y=6;y<H;y+=18){
     ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx+4,y+5);ctx.lineTo(cx,y+10);ctx.lineTo(cx-4,y+5);ctx.closePath();ctx.fill();
   }
   // Center circle ornament (double ring)
-  ctx.strokeStyle=sk.fg;ctx.lineWidth=1.5;ctx.globalAlpha=.1;
+  ctx.strokeStyle=sk.fg;ctx.lineWidth=1.5;ctx.globalAlpha=.2;
   ctx.beginPath();ctx.arc(cx,cy,30,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,24,0,Math.PI*2);ctx.stroke();
   ctx.restore();
 }
-// Bauhaus hue: step between primaries (red, yellow, blue) instead of smooth rainbow
-function bauhausColor(offset,sat,lum){
-  const h=(chaosHue+(offset||0))%360;
-  const primaries=[5,50,220];
-  const bh=primaries[Math.floor(((h%360+360)%360)/120)];
-  return`hsl(${bh},${sat||85}%,${lum||50}%)`;
-}
-// Helper: returns chaos fill — delegates to bauhaus stepping when active
-function chaosColorFill(sk,offset,sat,lum){
-  if(sk.bauhaus)return bauhausColor(offset,sat,lum);
-  return`hsl(${chaosHue+(offset||0)},${sat||100}%,${lum||60}%)`;
-}
-// Bauhaus background: bold diagonals, overlapping geometry
+// Bauhaus background: flat primaries on paper, kept out of the paddle lanes so the black ball stays readable
 function drawBauhausBg(sk){
   ctx.save();
-  const cx=W/2,cy=H/2;
-  // Bold diagonal slashes
-  ctx.strokeStyle=sk.fg;ctx.lineWidth=1.5;ctx.globalAlpha=.04;
-  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W,H);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(0,H);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(W*.3,0);ctx.lineTo(W,H*.7);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(0,H*.3);ctx.lineTo(W*.7,H);ctx.stroke();
-  // Overlapping geometric shapes
-  ctx.globalAlpha=.025;
-  ctx.fillStyle='#cc2222';ctx.fillRect(W*.08,H*.15,W*.12,H*.35);
-  ctx.fillStyle='#3250b4';ctx.beginPath();ctx.arc(W*.75,H*.3,H*.15,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#d2b432';ctx.fillRect(W*.6,H*.6,W*.2,H*.2);
-  // Horizontal parallel lines (bottom left, top right)
-  ctx.strokeStyle=sk.accent;ctx.lineWidth=1;ctx.globalAlpha=.04;
-  for(let i=0;i<5;i++){
-    ctx.beginPath();ctx.moveTo(8,H-40+i*6);ctx.lineTo(W*.25,H-40+i*6);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(W*.75,30+i*6);ctx.lineTo(W-8,30+i*6);ctx.stroke();
+  const cx=W/2;
+  // Shapes stay clear of the score band at the top
+  ctx.globalAlpha=.58;
+  ctx.fillStyle='#d62718';ctx.fillRect(W*.12,H*.2,W*.17,H*.35);
+  ctx.globalAlpha=.52;ctx.fillStyle='#1f4fa8';ctx.beginPath();ctx.arc(W*.73,H*.64,H*.19,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#f2b705';ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(W*.36,H);ctx.arc(W*.36,H,H*.27,Math.PI,Math.PI*1.5);ctx.closePath();ctx.fill();
+  // Diagonal bar and rule lines
+  ctx.strokeStyle=sk.fg;ctx.globalAlpha=.18;ctx.lineWidth=7;
+  ctx.beginPath();ctx.moveTo(W*.68,H*.1);ctx.lineTo(W*.92,H*.34);ctx.stroke();
+  ctx.lineWidth=1.5;ctx.globalAlpha=.3;
+  for(let i=0;i<4;i++){
+    ctx.beginPath();ctx.moveTo(W*.06,H*.68+i*7);ctx.lineTo(W*.22,H*.68+i*7);ctx.stroke();
   }
-  // Midline: bold vertical with small circles
-  ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.globalAlpha=.1;
+  // Midline: solid rule with rings
+  ctx.globalAlpha=.4;ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.stroke();
-  ctx.globalAlpha=.08;ctx.lineWidth=1;
-  for(let y=20;y<H;y+=40){
-    ctx.beginPath();ctx.arc(cx,y,5,0,Math.PI*2);ctx.stroke();
-  }
+  ctx.fillStyle=sk.bg;ctx.lineWidth=1.5;
+  for(let y=45;y<H;y+=90){ctx.beginPath();ctx.arc(cx,y,6,0,Math.PI*2);ctx.fill();ctx.stroke();}
   ctx.restore();
 }
 // Forest zen background: tree trunks, vine midline, ambient leaves
@@ -75,8 +56,12 @@ let forestLeaves=[];
 function drawForestBg(sk,now){
   ctx.save();
   const cx=W/2;
-  // Faint vertical tree trunks
-  ctx.strokeStyle='#2a4a20';ctx.globalAlpha=.06;ctx.lineWidth=3;
+  // Canopy light from above
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#16301f');sky.addColorStop(1,'#08130c');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  // Vertical tree trunks
+  ctx.strokeStyle='#335c2e';ctx.globalAlpha=.3;ctx.lineWidth=3;
   const trunkXs=[W*.1,W*.22,W*.38,W*.62,W*.78,W*.9];
   for(const tx of trunkXs){
     ctx.beginPath();ctx.moveTo(tx,0);ctx.lineTo(tx+1,H);ctx.stroke();
@@ -88,7 +73,7 @@ function drawForestBg(sk,now){
     ctx.lineWidth=3;
   }
   // Vine midline — sinuous curve instead of straight dashes
-  ctx.strokeStyle='#3d6835';ctx.lineWidth=1.5;ctx.globalAlpha=.12;
+  ctx.strokeStyle='#4f8445';ctx.lineWidth=1.5;ctx.globalAlpha=.45;
   ctx.beginPath();ctx.moveTo(cx,0);
   for(let y=0;y<=H;y+=4){
     const wave=Math.sin(y*.02+now*.0005)*6;
@@ -96,7 +81,7 @@ function drawForestBg(sk,now){
   }
   ctx.stroke();
   // Small vine leaves along midline
-  ctx.fillStyle='#4a7a40';ctx.globalAlpha=.08;
+  ctx.fillStyle='#6a9f5a';ctx.globalAlpha=.4;
   for(let y=30;y<H;y+=45){
     const wave=Math.sin(y*.02+now*.0005)*6;
     const side=y%90<45?1:-1;
@@ -120,6 +105,50 @@ function drawForestBg(sk,now){
   }
   ctx.restore();
 }
+// Neon: indigo grid, glowing magenta centre line and lit walls
+function drawNeonBg(sk){
+  ctx.save();
+  ctx.strokeStyle='#2a1f66';ctx.globalAlpha=.7;ctx.lineWidth=1;
+  for(let x=W/2%35;x<W;x+=35){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=H/2%35;y<H;y+=35){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.globalAlpha=.65;ctx.shadowBlur=10;
+  ctx.strokeStyle=ctx.shadowColor=sk.fg;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,1);ctx.lineTo(W,1);ctx.moveTo(0,H-1);ctx.lineTo(W,H-1);ctx.stroke();
+  ctx.strokeStyle=ctx.shadowColor=sk.midline;ctx.setLineDash([12,10]);
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+  ctx.restore();
+}
+// Retro: the 1972 cabinet's dashed net of solid blocks
+function drawRetroBg(sk){
+  ctx.save();ctx.fillStyle=sk.midline;ctx.globalAlpha=.6;
+  for(let y=5;y<H;y+=22)ctx.fillRect(W/2-3,y,6,11);
+  ctx.restore();
+}
+function drawSkinBg(sk,now){
+  if(sk.deco)drawDecoBg(sk);
+  else if(sk.zen)drawForestBg(sk,now);
+  else if(sk.bauhaus)drawBauhausBg(sk);
+  else if(sk.neonGlow)drawNeonBg(sk);
+  else if(!sk.modern)drawRetroBg(sk);
+}
+// Retro scores: chunky 3x5 block digits like the original arcade
+const BLOCK_DIGITS=['111101101101111','010010010010010','111001111100111','111001111001111','101101111001001','111100111001111','111100111101111','111001001001001','111101111101111','111101111001111'];
+function drawBlockDigits(str,cx,baseY,cell){
+  const w=str.length*4*cell-cell;let x0=Math.round(cx-w/2);
+  for(const ch of str){
+    const g=BLOCK_DIGITS[+ch];
+    if(g)for(let i=0;i<15;i++)if(g[i]==='1')ctx.fillRect(x0+(i%3)*cell,baseY-5*cell+Math.floor(i/3)*cell,cell,cell);
+    x0+=4*cell;
+  }
+}
+function drawScoreText(sk,txt,x,y){
+  if(sk.blockDigits)drawBlockDigits(String(txt),x,y,9);
+  else ctx.fillText(txt,x,y);
+}
+function scoreGlow(sk){
+  if(sk.scoreGlow){ctx.shadowColor=sk.scoreGlowColor||sk.accent;ctx.shadowBlur=sk.scoreGlow;}
+}
+
 function drawModernBg(sk,now){
   ctx.save();
   const bg=ctx.createLinearGradient(0,0,W,H);
@@ -151,7 +180,7 @@ function drawPaddle(x,y,ph,sk,glow){
     ctx.shadowColor=sk.neonGlow?sk.fg:(activePowerups.length?POWER_UPS[activePowerups[activePowerups.length-1].type].color:sk.fg);
     ctx.shadowBlur=sk.neonGlow?16:12;
   }
-  ctx.fillStyle=sk.chaos?chaosColorFill(sk,120,100,60):sk.fg;
+  ctx.fillStyle=sk.fg;
   if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(x,y,PW,ph,5);ctx.fill();}
   else if(sk.paddleShape==='pixel'){
     ctx.fillStyle=sk.accent;
@@ -162,6 +191,7 @@ function drawPaddle(x,y,ph,sk,glow){
     ctx.fillRect(x+PW-1,y+3,2,Math.max(0,ph-6));
   }
   else if(sk.paddleShape==='thin'){ctx.fillRect(x+3,y,PW-6,ph);}
+  else if(sk.paddleShape==='bauhaus'){ctx.fillStyle=x<W/2?'#d62718':'#1f4fa8';ctx.fillRect(x,y,PW,ph);}
   else if(sk.paddleShape==='deco'){
     // Art Deco stepped column paddle
     const cx=x+PW/2,capH=ph*0.08,stepH=ph*0.04;
@@ -182,8 +212,6 @@ function drawPaddle(x,y,ph,sk,glow){
     ctx.beginPath();ctx.moveTo(x+1,barY1);ctx.lineTo(x+PW-1,barY1);ctx.moveTo(x+1,barY2);ctx.lineTo(x+PW-1,barY2);ctx.stroke();
   }
   else{ctx.fillRect(x,y,PW,ph);}
-  // Chaos: add dashed outline for colorblind differentiation
-  if(sk.chaos){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.globalAlpha=.4;ctx.setLineDash([3,3]);ctx.strokeRect(x,y,PW,ph);ctx.setLineDash([]);}
   ctx.restore();
 }
 function drawBall(x,y,BS,sk,isDecoy,isGhost){
@@ -192,7 +220,7 @@ function drawBall(x,y,BS,sk,isDecoy,isGhost){
   if(sk.neonGlow&&!isDecoy&&!isGhost){ctx.shadowColor=sk.accent;ctx.shadowBlur=20;}
   // Zen forest: warm firefly glow
   if(sk.zen&&!isDecoy&&!isGhost){ctx.shadowColor='#d4a030';ctx.shadowBlur=18+4*Math.sin(performance.now()/400);}
-  ctx.fillStyle=isDecoy?(sk.chaos?chaosColorFill(sk,90,80,50):sk.fg):(sk.chaos?chaosColorFill(sk,0,100,60):sk.accent);
+  ctx.fillStyle=isDecoy?sk.fg:sk.accent;
   if(sk.ballShape==='pixel'){
     const px=Math.round(x),py=Math.round(y),s=Math.max(4,BS);
     ctx.fillRect(px+Math.floor(s*.2),py,s-Math.floor(s*.4),s);
@@ -221,12 +249,6 @@ function drawBall(x,y,BS,sk,isDecoy,isGhost){
     }
     // Outer ring
     ctx.globalAlpha=.15;ctx.beginPath();ctx.arc(bcx,bcy,BS*.9,0,Math.PI*2);ctx.stroke();
-  }
-  // Chaos: crosshair on real ball, X on decoys for colorblind differentiation
-  if(sk.chaos&&!isGhost){
-    ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.globalAlpha=isDecoy?.3:.5;
-    if(isDecoy){ctx.beginPath();ctx.moveTo(x+2,y+2);ctx.lineTo(x+BS-2,y+BS-2);ctx.moveTo(x+BS-2,y+2);ctx.lineTo(x+2,y+BS-2);ctx.stroke();}
-    else{ctx.beginPath();ctx.moveTo(x+BS/2,y+1);ctx.lineTo(x+BS/2,y+BS-1);ctx.moveTo(x+1,y+BS/2);ctx.lineTo(x+BS-1,y+BS/2);ctx.stroke();}
   }
   ctx.restore();
 }
@@ -295,11 +317,11 @@ function drawRallyHud(){
   const shakeX=rallyShake>0?(Math.random()-0.5)*rallyShake*2:0;
   const shakeY=rallyShake>0?(Math.random()-0.5)*rallyShake*2:0;
   ctx.translate(W/2+shakeX,H-28+shakeY);ctx.scale(totalScale,totalScale);
-  ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,70):sk.accent;
+  ctx.font='18px '+sk.text;ctx.fillStyle=sk.accent;
   ctx.fillText(`RALLY  ${rallyHits}`,0,0);
   if(rallyHits>=sessionRallyPB&&rallyHits>=5){
     ctx.globalAlpha=rallyAlpha*.75;
-    ctx.font='14px '+UI_FONT;ctx.fillStyle=sk.fg;
+    ctx.font='14px '+sk.text;ctx.fillStyle=sk.fg;
     ctx.fillText('best rally!',0,14);
   }
   ctx.globalAlpha=1;ctx.restore();
@@ -359,28 +381,16 @@ function drawServeAim(now,side){
 
 function drawServe(now){
   const s=state,sk=SKINS[currentSkin];
-  fillCanvasBg(sk.chaos?chaosColorFill(sk,200,60,5):sk.bg);
+  fillCanvasBg(sk.bg);
   ctx.save();ctx.translate(MARGIN,MARGIN);
   if(sk.modern)drawModernBg(sk,now);
-  // Neon skin: subtle grid lines
-  if(sk.neonGlow){
-    ctx.save();ctx.strokeStyle=sk.midline;ctx.lineWidth=.5;ctx.globalAlpha=.15;
-    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.globalAlpha=1;ctx.restore();
-  }
-  if(sk.modern){}
-  else if(sk.deco){drawDecoBg(sk);}
-  else if(sk.zen){drawForestBg(sk,performance.now());}
-  else if(sk.bauhaus){drawBauhausBg(sk);}
-  else{ctx.strokeStyle=sk.midline;ctx.setLineDash([8,8]);ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);}
-  ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,75):sk.fg;
+  drawSkinBg(sk,now);
+  ctx.fillStyle=sk.fg;
   ctx.font=sk.scoreFont;ctx.textAlign='center';
-  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
-  ctx.fillText(s.left.score,W/2-80,60);ctx.fillText(s.right.score,W/2+80,60);
+  ctx.save();scoreGlow(sk);
+  drawScoreText(sk,s.left.score,W/2-80,60);drawScoreText(sk,s.right.score,W/2+80,60);
   ctx.restore();
-  ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
+  ctx.font=sk.labelFont;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
   ctx.fillText(nameLeft,W/2-80,78);ctx.fillText(nameRight,W/2+80,78);ctx.globalAlpha=1;
   const LP=24,RP=W-24-PW,dlPH=getPH('left'),drPH=getPH('right');
   const lG=getAPUSide('widepaddle')==='left';
@@ -389,10 +399,10 @@ function drawServe(now){
   drawParticles();
   if(gameMode==='bricks')drawBricks();
 
-  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
+  ctx.fillStyle=sk.veil||'rgba(0,0,0,.5)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
 
   if(countdown>0){
-    ctx.font='112px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillStyle=sk.fg;
+    ctx.font='112px '+sk.display;ctx.textAlign='center';ctx.fillStyle=sk.fg;
     ctx.globalAlpha=.9;ctx.fillText(countdown,W/2,H/2+34);ctx.globalAlpha=1;
   }else{
     const sideIsAI=(tourney&&tourneyAI[serveSide])||(mode==='ai'&&serveSide==='right');
@@ -400,9 +410,9 @@ function drawServe(now){
     if(humanServes)drawServeAim(now,serveSide);
 
     const serveName=playerName(serveSide);
-    ctx.font='29px '+UI_FONT;ctx.textAlign='center';ctx.fillStyle=sk.fg;
+    ctx.font='29px '+sk.text;ctx.textAlign='center';ctx.fillStyle=sk.fg;
     ctx.fillText(`${serveName}'s serve`,W/2,H/2-18);
-    ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.accent;
+    ctx.font='17px '+sk.text;ctx.fillStyle=sk.accent;
     ctx.globalAlpha=.5+.5*Math.sin(now/300);
     if(humanServes){
       const isMobile='ontouchstart'in window;
@@ -421,7 +431,7 @@ function drawServe(now){
 
 function draw(now){
   const s=state,sk=SKINS[currentSkin];
-  fillCanvasBg(sk.chaos?chaosColorFill(sk,200,60,5):sk.bg);
+  fillCanvasBg(sk.bg);
   ctx.save();ctx.translate(MARGIN,MARGIN);
   if(sk.modern)drawModernBg(sk,now);
 
@@ -431,29 +441,14 @@ function draw(now){
     ctx.translate(bx,by);ctx.scale(1+zoomAmt,1+zoomAmt);ctx.translate(-bx,-by);
   }
 
-  // Neon skin: grid overlay
-  if(sk.neonGlow){
-    ctx.save();ctx.strokeStyle=sk.midline;ctx.lineWidth=.5;ctx.globalAlpha=.12;
-    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.globalAlpha=1;ctx.restore();
-  }
-
-  if(sk.modern){}
-  else if(sk.deco){drawDecoBg(sk);}
-  else if(sk.zen){drawForestBg(sk,performance.now());}
-  else if(sk.bauhaus){drawBauhausBg(sk);}
-  else{
-    ctx.strokeStyle=sk.midline;ctx.setLineDash([8,8]);ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
-  }
+  drawSkinBg(sk,now);
 
   // Midline proximity glow
   const midProximity=1-Math.min(Math.abs(s.ball.x-W/2)/(W/2),1);
   if(midProximity>0.3){
     ctx.save();
     const glowAlpha=(midProximity-0.3)*0.5;
-    ctx.strokeStyle=sk.accent;ctx.setLineDash([8,8]);
+    ctx.strokeStyle=sk.netGlow||sk.accent;ctx.setLineDash([8,8]);
     ctx.globalAlpha=glowAlpha*0.4;ctx.lineWidth=8;
     ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
     ctx.globalAlpha=glowAlpha;ctx.lineWidth=4;
@@ -467,26 +462,26 @@ function draw(now){
   if(leftScoreFlash<0.05)leftScoreFlash=0;
   if(rightScoreFlash<0.05)rightScoreFlash=0;
 
-  ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,75):sk.fg;
+  ctx.fillStyle=sk.fg;
   ctx.textAlign='center';
-  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
+  ctx.save();scoreGlow(sk);
   // Left score with flash
   ctx.save();
   const lFlashScale=1+leftScoreFlash*0.4;
   ctx.font=sk.scoreFont;
-  if(leftScoreFlash>0){ctx.globalAlpha=Math.min(1,1+leftScoreFlash*0.3);ctx.translate(W/2-80,60);ctx.scale(lFlashScale,lFlashScale);ctx.fillText(s.left.score,0,0);}
-  else{ctx.fillText(s.left.score,W/2-80,60);}
+  if(leftScoreFlash>0){ctx.globalAlpha=Math.min(1,1+leftScoreFlash*0.3);ctx.translate(W/2-80,60);ctx.scale(lFlashScale,lFlashScale);drawScoreText(sk,s.left.score,0,0);}
+  else{drawScoreText(sk,s.left.score,W/2-80,60);}
   ctx.restore();
   // Right score with flash
-  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=12;
-  ctx.fillStyle=sk.chaos?chaosColorFill(sk,60,100,75):sk.fg;
+  ctx.save();scoreGlow(sk);
+  ctx.fillStyle=sk.fg;
   const rFlashScale=1+rightScoreFlash*0.4;
   ctx.font=sk.scoreFont;
-  if(rightScoreFlash>0){ctx.globalAlpha=Math.min(1,1+rightScoreFlash*0.3);ctx.translate(W/2+80,60);ctx.scale(rFlashScale,rFlashScale);ctx.fillText(s.right.score,0,0);}
-  else{ctx.fillText(s.right.score,W/2+80,60);}
+  if(rightScoreFlash>0){ctx.globalAlpha=Math.min(1,1+rightScoreFlash*0.3);ctx.translate(W/2+80,60);ctx.scale(rFlashScale,rFlashScale);drawScoreText(sk,s.right.score,0,0);}
+  else{drawScoreText(sk,s.right.score,W/2+80,60);}
   ctx.restore();
   ctx.restore();
-  ctx.font='17px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
+  ctx.font=sk.labelFont;ctx.fillStyle=sk.fg;ctx.globalAlpha=.7;
   ctx.fillText(nameLeft,W/2-80,78);ctx.fillText(nameRight,W/2+80,78);ctx.globalAlpha=1;
 
   if(matchFormat>1){
@@ -597,9 +592,9 @@ function draw(now){
   }
 
   if(paused){
-    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
-    ctx.fillStyle=sk.fg;ctx.font='72px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
-    ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
+    ctx.fillStyle=sk.veil||'rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
+    ctx.fillStyle=sk.fg;ctx.font='72px '+sk.display;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
+    ctx.font='18px '+sk.text;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
   }
 
   ctx.restore();

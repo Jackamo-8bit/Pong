@@ -646,7 +646,7 @@ function updateFrame(){
   }
 
   if(_puDecoy){let died=false;for(let i=decoyBalls.length-1;i>=0;i--){if(!updateDecoyBall(decoyBalls[i],dt)){decoyBalls[i]=decoyBalls[decoyBalls.length-1];decoyBalls.pop();died=true;}}}
-  if(SKINS[currentSkin].chaos)chaosHue=(chaosHue+.8*dt)%360;
+  if(gameMode==='chaos')chaosHue=(chaosHue+.8*dt)%360;
   updateParticles(dt);shakeAmt=prefersReducedMotion?0:Math.max(0,shakeAmt-.6*dt);
   _drawDt=dt;draw(now);
   if(onlineRole==='host'&&onlineConn)onlineSendState(now);

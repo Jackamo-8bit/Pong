@@ -1,14 +1,30 @@
 // ═══════════════════════════════════════════════════════════════════
 // SKINS
 // ═══════════════════════════════════════════════════════════════════
+// Each skin: canvas colours, shapes and type. display = scores/countdown face, text = names/prompts face.
+// veil = overlay behind countdown and pause text; scoreGlow = blur on the score (0 = crisp).
 const SKINS={
-  retro:{ui:{accent:'#f5f2f0',ink:'#121420',deep:'#9a9aa6'},name:'Retro',desc:'old & basic',bg:'#000',fg:'#fff',accent:'#fff',midline:'#2a2a2a',ballShape:'square',paddleShape:'rect',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#000',menuFg:'#fff',particleColor:(l)=>{const v=Math.floor(180+l*75);return`rgb(${v},${v},${v})`;},puBg:'rgba(30,30,30,.95)',puText:'#fff',brickColors:['#fff','#ccc','#aaa','#888']},
-  modern:{ui:{accent:'#b76d68',ink:'#121420',deep:'#8f5552'},name:'Modern',desc:'21st Century',bg:'#121420',fg:'#f5f2f0',accent:'#b76d68',midline:'#403f4c',ballShape:'pixel',paddleShape:'pixel',scoreFont:"64px 'Jersey 10',monospace",labelFont:"16px 'Jersey 15',monospace",menuBg:'#121420',menuFg:'#f5f2f0',menuPanel:'#1b2432',menuSoft:'#2c2b3c',particleColor:(l)=>`rgba(183,109,104,${l})`,puBg:'rgba(18,20,32,.95)',puText:'#f5f2f0',brickColors:['#b76d68','#403f4c','#2c2b3c','#1b2432'],modern:true},
-  abstract:{ui:{accent:'#cc2222',ink:'#f0e8d0',deep:'#861414'},name:'Abstract',desc:'bauhaus & bold',bg:'#0a0a0a',fg:'#cc2222',accent:'#f0e8d0',midline:'#1a1a1a',ballShape:'diamond',paddleShape:'thin',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#0a0a0a',menuFg:'#cc2222',particleColor:(l)=>{const p=[[204,34,34],[50,80,180],[210,180,50]];const c=p[Math.floor(Math.random()*3)];return`rgba(${c[0]},${c[1]},${c[2]},${l})`;},chaos:true,bauhaus:true,puBg:'rgba(10,10,10,.95)',puText:'#f0e8d0',brickColors:['#cc2222','#f0e8d0','#3250b4','#d2b432']},
-  forest:{ui:{accent:'#d4a030',ink:'#121420',deep:'#8f6a1c'},name:'Forest',desc:'zen & tranquil',bg:'#060d06',fg:'#5a8a50',accent:'#d4a030',midline:'#0e1a0e',ballShape:'circle',paddleShape:'rounded',scoreFont:'bold 46px Georgia',labelFont:'11px Georgia',menuBg:'#060d06',menuFg:'#5a8a50',particleColor:(l)=>{const r=Math.floor(180+l*40),g=Math.floor(140+l*50);return`rgba(${r},${g},60,${l})`;},puBg:'rgba(6,13,6,.95)',puText:'#d4a030',brickColors:['#5a8a50','#3d6835','#8ab870','#d4a030'],zen:true},
-  neon:{ui:{accent:'#00f0ff',ink:'#05050f',deep:'#0090a0'},name:'Neon',desc:'cyberpunk glow',bg:'#05050f',fg:'#00f0ff',accent:'#ff00e6',midline:'#0a0a1a',ballShape:'circle',paddleShape:'rounded',scoreFont:"bold 46px 'Courier New',monospace",labelFont:"11px 'Courier New',monospace",menuBg:'#05050f',menuFg:'#00f0ff',particleColor:(l)=>`rgba(255,0,230,${l})`,puBg:'rgba(5,5,15,.95)',puText:'#00f0ff',brickColors:['#00f0ff','#ff00e6','#a855f7','#39ff14'],neonGlow:true},
-  deco:{ui:{accent:'#c9a84c',ink:'#121420',deep:'#86702f'},name:'Deco',desc:'art deco gold',bg:'#08080e',fg:'#c9a84c',accent:'#f0e2b6',midline:'#1a1510',ballShape:'circle',paddleShape:'deco',scoreFont:"bold 46px Georgia,serif",labelFont:"11px Georgia,serif",menuBg:'#08080e',menuFg:'#c9a84c',particleColor:(l)=>{const g=Math.floor(168+l*40),r=Math.floor(200+l*55);return`rgba(${r},${g},76,${l})`;},puBg:'rgba(8,8,14,.95)',puText:'#f0e2b6',brickColors:['#c9a84c','#a0853a','#7a6530','#f0e2b6'],deco:true}
+  retro:{ui:{accent:'#f5f2f0',ink:'#121420',deep:'#9a9aa6'},name:'Retro',desc:'old & basic',bg:'#000',fg:'#fff',accent:'#fff',midline:'#fff',ballShape:'square',paddleShape:'rect',blockDigits:true,
+    scoreFont:"64px 'Jersey 10',monospace",labelFont:"17px 'Jersey 15',monospace",display:"'Jersey 10',monospace",text:"'Jersey 15',monospace",
+    menuBg:'#000',menuFg:'#fff',particleColor:(l)=>{const v=Math.floor(180+l*75);return`rgb(${v},${v},${v})`;},puBg:'rgba(30,30,30,.95)',puText:'#fff',brickColors:['#fff','#ccc','#aaa','#888']},
+  modern:{ui:{accent:'#b76d68',ink:'#121420',deep:'#8f5552'},name:'Modern',desc:'21st Century',bg:'#121420',fg:'#f5f2f0',accent:'#b76d68',midline:'#403f4c',ballShape:'pixel',paddleShape:'pixel',scoreGlow:12,
+    scoreFont:"64px 'Jersey 10',monospace",labelFont:"17px 'Jersey 15',monospace",display:"'Jersey 10',monospace",text:"'Jersey 15',monospace",
+    menuBg:'#121420',menuFg:'#f5f2f0',menuPanel:'#1b2432',menuSoft:'#2c2b3c',particleColor:(l)=>`rgba(183,109,104,${l})`,puBg:'rgba(18,20,32,.95)',puText:'#f5f2f0',brickColors:['#b76d68','#403f4c','#2c2b3c','#1b2432'],modern:true},
+  abstract:{ui:{accent:'#d62718',ink:'#f6f0e2',deep:'#9a1b10'},name:'Abstract',desc:'bauhaus & bold',bg:'#ece4d2',fg:'#1c1c1c',accent:'#1c1c1c',midline:'#1c1c1c',ballShape:'circle',paddleShape:'bauhaus',netGlow:'#d62718',veil:'rgba(236,228,210,.82)',
+    scoreFont:"700 60px 'Jost',sans-serif",labelFont:"500 16px 'Jost',sans-serif",display:"'Jost',sans-serif",text:"'Jost',sans-serif",
+    menuBg:'#ece4d2',menuFg:'#1c1c1c',particleColor:(l)=>`rgba(214,39,24,${l})`,bauhaus:true,puBg:'rgba(236,228,210,.97)',puText:'#1c1c1c',brickColors:['#d62718','#1f4fa8','#f2b705','#1c1c1c']},
+  forest:{ui:{accent:'#d4a030',ink:'#121420',deep:'#8f6a1c'},name:'Forest',desc:'zen & tranquil',bg:'#0b1a10',fg:'#a9cf94',accent:'#e8b84a',midline:'#3d6835',ballShape:'circle',paddleShape:'rounded',
+    scoreFont:"600 58px 'Fraunces',serif",labelFont:"italic 17px 'Fraunces',serif",display:"'Fraunces',serif",text:"'Fraunces',serif",
+    menuBg:'#0b1a10',menuFg:'#a9cf94',particleColor:(l)=>{const r=Math.floor(180+l*40),g=Math.floor(140+l*50);return`rgba(${r},${g},60,${l})`;},puBg:'rgba(11,26,16,.95)',puText:'#e8b84a',brickColors:['#a9cf94','#5a8a50','#3d6835','#e8b84a'],zen:true},
+  neon:{ui:{accent:'#00f0ff',ink:'#05050f',deep:'#0090a0'},name:'Neon',desc:'cyberpunk glow',bg:'#07051a',fg:'#3ff4ff',accent:'#ff2bd6',midline:'#ff2bd6',ballShape:'circle',paddleShape:'rounded',scoreGlow:18,scoreGlowColor:'#3ff4ff',
+    scoreFont:"64px 'Tilt Neon',sans-serif",labelFont:"17px 'Tilt Neon',sans-serif",display:"'Tilt Neon',sans-serif",text:"'Tilt Neon',sans-serif",
+    menuBg:'#07051a',menuFg:'#3ff4ff',particleColor:(l)=>`rgba(255,43,214,${l})`,puBg:'rgba(7,5,26,.95)',puText:'#3ff4ff',brickColors:['#3ff4ff','#ff2bd6','#a855f7','#39ff14'],neonGlow:true},
+  deco:{ui:{accent:'#c9a84c',ink:'#121420',deep:'#86702f'},name:'Deco',desc:'art deco gold',bg:'#0a0a10',fg:'#d4b25a',accent:'#f3e6bf',midline:'#1a1510',ballShape:'circle',paddleShape:'deco',
+    scoreFont:"62px 'Limelight',serif",labelFont:"19px 'Poiret One',serif",display:"'Limelight',serif",text:"'Poiret One',serif",
+    menuBg:'#0a0a10',menuFg:'#d4b25a',particleColor:(l)=>{const g=Math.floor(168+l*40),r=Math.floor(200+l*55);return`rgba(${r},${g},76,${l})`;},puBg:'rgba(10,10,16,.95)',puText:'#f3e6bf',brickColors:['#d4b25a','#a0853a','#7a6530','#f3e6bf'],deco:true}
 };
+// Canvas text won't trigger a web-font download on its own, so ask for each skin's faces up front
+if(document.fonts)Object.values(SKINS).forEach(s=>{document.fonts.load(s.scoreFont).catch(()=>{});document.fonts.load(s.labelFont).catch(()=>{});});
 
 // ═══════════════════════════════════════════════════════════════════
 // POWER-UPS (tuned durations)
@@ -469,6 +485,21 @@ function decoratePongButtons(){
 // ═══════════════════════════════════════════════════════════════════
 // SKIN GRID
 // ═══════════════════════════════════════════════════════════════════
+// Skin tile: drawn by the real skin renderer on the (hidden) game canvas, then copied down,
+// so tiles always match the game. Paddles and ball are drawn 3x so they read at tile size.
+function drawSkinPreview(tile,sk){
+  const k=Math.min(1,canvas.width/W,canvas.height/H);
+  ctx.save();ctx.setTransform(k,0,0,k,0,0);
+  ctx.fillStyle=sk.bg;ctx.fillRect(0,0,W,H);
+  if(sk.modern)drawModernBg(sk,0);else drawSkinBg(sk,0);
+  const at=(x,y,draw)=>{ctx.save();ctx.translate(x,y);ctx.scale(3,3);draw();ctx.restore();};
+  at(30,H/2-80,()=>drawPaddle(0,0,40,sk));
+  at(W-30-3*W,H/2-40,()=>drawPaddle(W-PW,0,40,sk)); // drawn at its real x so side-coloured paddles pick the right colour
+  at(W/2-15-3*(W/2),H/2-15,()=>drawBall(W/2,0,10,sk));
+  ctx.restore();
+  const t=tile.getContext('2d');t.imageSmoothingQuality='high';
+  t.drawImage(canvas,0,0,W*k,H*k,0,0,tile.width,tile.height);
+}
 function buildSkinGrid(){
   const grid=document.getElementById('skin-grid');grid.innerHTML='';
   Object.entries(SKINS).forEach(([key,s])=>{
@@ -476,23 +507,8 @@ function buildSkinGrid(){
     btn.type='button';btn.className='skin-btn'+(key===currentSkin?' active':'');
     btn.setAttribute('aria-pressed',key===currentSkin);btn.title=`${s.name}: ${s.desc}`;
     btn.onclick=()=>{currentSkin=key;applyMenuSkin();buildSkinGrid();grid.querySelector('.active')?.focus();};
-    const prev=document.createElement('div');prev.className='skin-preview';prev.style.background=s.bg;
-    const rx=s.paddleShape==='rounded'?3:s.paddleShape==='thin'?1:0;
-    const decoMidline=s.modern?`<rect x="39" y="7" width="2" height="6" fill="${s.midline}"/><rect x="39" y="18" width="2" height="6" fill="${s.midline}"/><rect x="39" y="29" width="2" height="6" fill="${s.midline}"/><rect x="39" y="40" width="2" height="6" fill="${s.midline}"/>`:s.deco?`<polygon points="40,10 43,15 40,20 37,15" fill="${s.fg}" opacity=".15"/><polygon points="40,22 43,27 40,32 37,27" fill="${s.fg}" opacity=".15"/><polygon points="40,34 43,39 40,44 37,39" fill="${s.fg}" opacity=".15"/><circle cx="40" cy="25" r="12" fill="none" stroke="${s.fg}" stroke-width=".5" opacity=".1"/>`:s.zen?`<path d="M40,0 Q44,12 38,25 Q42,38 40,50" stroke="#3d6835" stroke-width="1" fill="none" opacity=".3"/><ellipse cx="44" cy="15" rx="3" ry="1.5" fill="#4a7a40" opacity=".2"/><ellipse cx="36" cy="35" rx="3" ry="1.5" fill="#4a7a40" opacity=".2"/>`:s.bauhaus?`<line x1="40" y1="0" x2="40" y2="50" stroke="#f0e8d0" stroke-width="1.5" opacity=".12"/><circle cx="40" cy="12" r="3" fill="none" stroke="#f0e8d0" stroke-width=".5" opacity=".1"/><circle cx="40" cy="38" r="3" fill="none" stroke="#f0e8d0" stroke-width=".5" opacity=".1"/>`:`<line x1="40" y1="0" x2="40" y2="50" stroke="${s.midline}" stroke-width="1" stroke-dasharray="4,4"/>`;
-    const decoPaddle=s.modern?`<rect x="4" y="9" width="9" height="32" fill="${s.accent}"/><rect x="7" y="12" width="2" height="26" fill="#e09791" opacity=".45"/><rect x="67" y="9" width="9" height="32" fill="${s.accent}"/><rect x="70" y="12" width="2" height="26" fill="#e09791" opacity=".45"/>`:s.deco?`<rect x="2" y="12" width="10" height="2" fill="${s.fg}"/><rect x="3" y="14" width="8" height="20" fill="${s.fg}"/><rect x="2" y="34" width="10" height="2" fill="${s.fg}"/><rect x="68" y="12" width="10" height="2" fill="${s.fg}"/><rect x="69" y="14" width="8" height="20" fill="${s.fg}"/><rect x="68" y="34" width="10" height="2" fill="${s.fg}"/>`:s.bauhaus?`<rect x="4" y="14" width="4" height="22" fill="#cc2222"/><rect x="72" y="14" width="4" height="22" fill="#cc2222"/>`:`<rect x="4" y="12" width="${s.paddleShape==='thin'?4:6}" height="26" rx="${rx}" fill="${s.fg}"/><rect x="${s.paddleShape==='thin'?72:70}" y="12" width="${s.paddleShape==='thin'?4:6}" height="26" rx="${rx}" fill="${s.fg}"/>`;
-    const decoRays=s.deco?[0,1,2,3,4,5,6,7].map(i=>{const a=i*Math.PI/4;return`<line x1="40" y1="25" x2="${40+Math.cos(a)*35}" y2="${25+Math.sin(a)*22}" stroke="${s.fg}" stroke-width=".5" opacity=".04"/>`;}).join(''):'';
-    const zenBg=s.zen?`<line x1="16" y1="0" x2="16" y2="50" stroke="#2a4a20" stroke-width="1.5" opacity=".08"/><line x1="64" y1="0" x2="64" y2="50" stroke="#2a4a20" stroke-width="1.5" opacity=".08"/><ellipse cx="22" cy="10" rx="4" ry="2" fill="#5a8a50" opacity=".12" transform="rotate(-20,22,10)"/><ellipse cx="58" cy="40" rx="4" ry="2" fill="#d4a030" opacity=".12" transform="rotate(15,58,40)"/>`:'';
-    const bauhausBg=s.bauhaus?`<line x1="0" y1="0" x2="80" y2="50" stroke="#cc2222" stroke-width=".5" opacity=".06"/><line x1="80" y1="0" x2="0" y2="50" stroke="#cc2222" stroke-width=".5" opacity=".06"/><rect x="10" y="8" width="10" height="18" fill="#cc2222" opacity=".05"/><circle cx="62" cy="16" r="8" fill="#3250b4" opacity=".05"/><rect x="50" y="32" width="14" height="10" fill="#d2b432" opacity=".05"/>`:'';
-    prev.innerHTML=`<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg">
-      ${decoRays}${zenBg}${bauhausBg}${decoMidline}${decoPaddle}
-      ${s.ballShape==='pixel'?`<rect x="36" y="21" width="8" height="8" fill="${s.accent}"/><rect x="34" y="23" width="12" height="4" fill="${s.accent}"/>`
-        :s.ballShape==='circle'?`<circle cx="40" cy="25" r="4" fill="${s.accent}"/>`
-        :s.ballShape==='diamond'?`<polygon points="40,20 45,25 40,30 35,25" fill="${s.accent}"/>`
-        :`<rect x="37" y="22" width="6" height="6" fill="${s.accent}"/>`}
-      ${s.neonGlow?`<circle cx="40" cy="25" r="6" fill="none" stroke="${s.accent}" stroke-width="1" opacity=".3"/>`:''}
-      ${s.zen?`<circle cx="40" cy="25" r="7" fill="#d4a030" opacity=".08"/>`:''}
-      ${s.deco?`<circle cx="40" cy="25" r="6" fill="none" stroke="${s.fg}" stroke-width=".5" opacity=".2"/>`:''}
-    </svg>`;
+    const prev=document.createElement('canvas');prev.className='skin-preview';prev.width=128;prev.height=80;
+    drawSkinPreview(prev,s);
     btn.appendChild(prev);
     const lbl=document.createElement('span');lbl.textContent=s.name;
     btn.appendChild(lbl);grid.appendChild(btn);

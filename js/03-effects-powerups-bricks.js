@@ -3,10 +3,10 @@
 // ═══════════════════════════════════════════════════════════════════
 function spawnParticles(x,y,dir,count){
   if(prefersReducedMotion)return;
-  count=count||(SKINS[currentSkin].chaos?18+activePowerups.length*4:10);
+  count=count||10;
   for(let i=0;i<count;i++){
-    const spread=SKINS[currentSkin].chaos?Math.PI:Math.PI*.8;
-    const angle=Math.random()*spread-spread/2,spd=Math.random()*(SKINS[currentSkin].chaos?4:2.5)+.8;
+    const spread=Math.PI*.8;
+    const angle=Math.random()*spread-spread/2,spd=Math.random()*2.5+.8;
     particles.push({x,y,vx:Math.cos(angle)*spd*dir,vy:Math.sin(angle)*spd,life:1,decay:Math.random()*.05+.03,size:Math.random()*3+1,hue:Math.random()*360});
   }
 }
@@ -34,10 +34,9 @@ function drawParticles(){
   const sk=SKINS[currentSkin];
   for(const p of particles){
     ctx.globalAlpha=p.life*.75;
-    ctx.fillStyle=p.brickColor?p.brickColor:(sk.chaos||p.isPu)?`hsl(${p.hue},100%,60%)`:sk.particleColor(p.life);
+    ctx.fillStyle=p.brickColor?p.brickColor:p.isPu?`hsl(${p.hue},100%,60%)`:sk.particleColor(p.life);
     ctx.beginPath();
     if(p.isDebris){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);const s=p.life;ctx.fillRect(-p.w*s/2,-p.h*s/2,p.w*s,p.h*s);ctx.restore();}
-    else if(sk.chaos&&!p.isPu&&!p.brickColor){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.life*5);ctx.fillRect(-p.size*p.life,-p.size*p.life,p.size*p.life*2,p.size*p.life*2);ctx.restore();}
     else{ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();}
   }
   ctx.globalAlpha=1;
@@ -144,7 +143,7 @@ function showPuPopup(side,type){
   inner.style.background=sk.puBg;inner.style.borderColor=pu.color;inner.style.color=sk.puText;
   popup.classList.add('show');
   if(puPopupTimeout)clearTimeout(puPopupTimeout);
-  const popupMs=SKINS[currentSkin].chaos?3500:2200;
+  const popupMs=2200;
   puPopupTimeout=setTimeout(()=>popup.classList.remove('show'),popupMs);
 }
 function activatePowerup(type,side,now){
