@@ -40,7 +40,7 @@ python3 serve.py 3000
 - Serve: `Space`
 - Pause: `P`
 - Volume: `+` / `-`
-- Test panel: `T`
+- Test panel (developers): add `?debug` to the URL, e.g. `http://localhost:8080/?debug`, then press `T`
 
 On mobile, use the touch zones on either side of the screen.
 

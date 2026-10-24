@@ -9,7 +9,10 @@ function runIntro(){
 // TEST MODE
 // ═══════════════════════════════════════════════════════════════════
 let testPanelOpen=false;
+// Developer-only: the panel opens only when the URL has ?debug (e.g. localhost:8080/?debug)
+const DEBUG_MODE=new URLSearchParams(location.search).has('debug');
 function toggleTestPanel(){
+  if(!DEBUG_MODE)return;
   testPanelOpen=!testPanelOpen;
   if(testPanelOpen)buildTestButtons();
   document.getElementById('test-panel').style.display=testPanelOpen?'block':'none';
