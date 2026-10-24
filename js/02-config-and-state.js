@@ -459,7 +459,8 @@ function decoratePongButtons(){
     'tourney-start-btn':`${pongIcon('play')}<span>Start tournament</span>`,
     'tourney-play-btn':`${pongIcon('play')}<span>Play next match</span>`,
     'surv-go-btn':`${pongIcon('play')}<span>Start</span>`,
-    'btnonline':`${pongIcon('globe')}<span>Online</span>`
+    'btnonline':`${pongIcon('globe')}<span>Online</span>`,
+    btnladder:`${pongIcon('ladder')}<span>Ladder</span>`
   };
   Object.entries(labels).forEach(([id,html])=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
 }

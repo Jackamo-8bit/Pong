@@ -71,6 +71,7 @@
 
   <div class="play-row">
     <button class="btn btn-lg" id="btnai" onclick="startMatch('ai')">Play vs AI</button>
+    <button class="btn-o btn-lg" id="btnladder" onclick="showLadder()">Ladder</button>
     <button class="btn" id="btn2p" onclick="startMatch('2p')">2 players</button>
     <button class="btn-o" id="btntourney" onclick="showTournamentSetup()">Tournament</button>
     <button class="btn-o" id="btnonline" onclick="showOnlineLobby()">Online</button>
@@ -168,7 +169,7 @@
     <button class="btn" id="mrabtn" onclick="startMatch(lastMode)">Rematch</button>
     <button class="btn" id="mrmbtn" onclick="showMenu()">Menu</button>
   </div>
-  <div class="hint" style="margin-top:4px;">or press Space for a rematch</div>
+  <div class="hint" style="margin-top:4px;">or press Space</div>
 </div>
 
 <!-- ── SURVIVAL TURN TRANSITION ── -->
@@ -180,6 +181,17 @@
     <button class="btn" onclick="showMenu()">Menu</button>
   </div>
   <div class="hint" style="margin-top:4px;">Press Space to start</div>
+</div>
+
+<!-- ── AI LADDER ── -->
+<div id="ladder" style="display:none;">
+  <h2 class="wtitle">Ladder</h2>
+  <p class="sub" id="ladder-sub"></p>
+  <ol class="ladder-list" id="ladder-list"></ol>
+  <div class="row">
+    <button class="btn" id="ladder-play" onclick="ladderPlay(ladderSel)">Play</button>
+    <button class="btn-o" onclick="showMenu()">Back</button>
+  </div>
 </div>
 
 <!-- ── TOURNAMENT SETUP ── -->
@@ -307,6 +319,7 @@
 <script src="js/07-tournament.js"></script>
 <script src="js/08-boot-and-test.js"></script>
 <script src="js/09-online.js"></script>
+<script src="js/10-ladder.js"></script>
 
 </body>
 </html>
