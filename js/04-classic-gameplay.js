@@ -19,7 +19,7 @@ function startMatch(m){
   }else if(!tourney){
     nameLeft =document.getElementById('name-left').value.trim()||'Player 1';
     nameRight=document.getElementById('name-right').value.trim()||'Player 2';
-    if(m==='ai')nameRight='AI';
+    if(m==='ai')nameRight=ladder?LADDER[ladder.idx].name:'AI';
   }
   matchSets={left:0,right:0};currentSet=0;
   brickPoints={left:0,right:0};lastBrickToucher=null;
@@ -83,10 +83,11 @@ function resetBall(loser){
 }
 
 function showMenu(){
+  ladderExit();
   if(animId)cancelAnimationFrame(animId);
   if(typeof onlineCleanup==='function'&&onlineRole)onlineCleanup();
   if(W!==700||H!==450)resizeCanvas(700,450);
-  ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner','online-lobby'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=id==='menu'?'flex':'none';});
+  ['menu','game-over','match-over','surv-turn','tourney-setup','tourney-bracket','tourney-winner','online-lobby','ladder'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=id==='menu'?'flex':'none';});
   document.getElementById('game-ui').style.display='none';
   document.getElementById('pu-popup').classList.remove('show');
   paused=false;applyMenuSkin();buildSkinGrid();buildLeaderboard();
@@ -131,7 +132,8 @@ function endSet(winner){
     document.getElementById('wmatch').textContent=pbNote;
   }
 
-  setPongButton('rabtn','play',matchOver?'Play again':(matchSets[winner]>=setsNeeded?'Play again':'Next set'));
+  setPongButton('rabtn','play',matchOver?'Continue':'Next set');
+  document.getElementById('rabtn').onclick=nextSetOrEnd;
   // Check achievements
   const loser=winner==='left'?'right':'left';
   checkAchievements(winner,loser,state[winner].score,state[loser].score);
@@ -172,6 +174,9 @@ function showMatchOver(){
   if(tourney){
     if(tourneyOnMatchEnd(winner))return;
   }
+  if(ladder){ladderOnMatchEnd(winner);return;}
+  setPongButton('mrabtn','play','Rematch');document.getElementById('mrabtn').onclick=()=>startMatch(lastMode);
+  setPongButton('mrmbtn','menu','Menu');document.getElementById('mrmbtn').onclick=showMenu;
   const wname=playerName(winner);
   document.getElementById('mtxt').textContent=`${wname} wins the match!`;
   document.getElementById('mscr').textContent=`${nameLeft} ${matchSets.left} — ${matchSets.right} ${nameRight}`;
@@ -217,7 +222,7 @@ document.addEventListener('keydown',e=>{
     }
   }
   if(overScreen&&e.key===' '){e.preventDefault();if(gameMode==='survival')survStartMatch(lastMode);else nextSetOrEnd();}
-  if(matchScreen&&e.key===' '){e.preventDefault();startMatch(lastMode);}
+  if(matchScreen&&e.key===' '){e.preventDefault();document.getElementById('mrabtn').click();}
   const survScreen=_elSurvTurn.style.display==='flex';
   if(survScreen&&e.key===' '){e.preventDefault();survStartTurn();}
 });
