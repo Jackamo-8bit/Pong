@@ -2,12 +2,12 @@
 // SKINS
 // ═══════════════════════════════════════════════════════════════════
 const SKINS={
-  retro:{name:'Retro',desc:'old & basic',bg:'#000',fg:'#fff',accent:'#fff',midline:'#2a2a2a',ballShape:'square',paddleShape:'rect',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#000',menuFg:'#fff',particleColor:(l)=>{const v=Math.floor(180+l*75);return`rgb(${v},${v},${v})`;},puBg:'rgba(30,30,30,.95)',puText:'#fff',brickColors:['#fff','#ccc','#aaa','#888']},
-  modern:{name:'Modern',desc:'21st Century',bg:'#121420',fg:'#f5f2f0',accent:'#b76d68',midline:'#403f4c',ballShape:'pixel',paddleShape:'pixel',scoreFont:"bold 46px 'Courier New',monospace",labelFont:"11px 'Courier New',monospace",menuBg:'#121420',menuFg:'#f5f2f0',menuPanel:'#1b2432',menuSoft:'#2c2b3c',particleColor:(l)=>`rgba(183,109,104,${l})`,puBg:'rgba(18,20,32,.95)',puText:'#f5f2f0',brickColors:['#b76d68','#403f4c','#2c2b3c','#1b2432'],modern:true},
-  abstract:{name:'Abstract',desc:'bauhaus & bold',bg:'#0a0a0a',fg:'#cc2222',accent:'#f0e8d0',midline:'#1a1a1a',ballShape:'diamond',paddleShape:'thin',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#0a0a0a',menuFg:'#cc2222',particleColor:(l)=>{const p=[[204,34,34],[50,80,180],[210,180,50]];const c=p[Math.floor(Math.random()*3)];return`rgba(${c[0]},${c[1]},${c[2]},${l})`;},chaos:true,bauhaus:true,puBg:'rgba(10,10,10,.95)',puText:'#f0e8d0',brickColors:['#cc2222','#f0e8d0','#3250b4','#d2b432']},
-  forest:{name:'Forest',desc:'zen & tranquil',bg:'#060d06',fg:'#5a8a50',accent:'#d4a030',midline:'#0e1a0e',ballShape:'circle',paddleShape:'rounded',scoreFont:'bold 46px Georgia',labelFont:'11px Georgia',menuBg:'#060d06',menuFg:'#5a8a50',particleColor:(l)=>{const r=Math.floor(180+l*40),g=Math.floor(140+l*50);return`rgba(${r},${g},60,${l})`;},puBg:'rgba(6,13,6,.95)',puText:'#d4a030',brickColors:['#5a8a50','#3d6835','#8ab870','#d4a030'],zen:true},
-  neon:{name:'Neon',desc:'cyberpunk glow',bg:'#05050f',fg:'#00f0ff',accent:'#ff00e6',midline:'#0a0a1a',ballShape:'circle',paddleShape:'rounded',scoreFont:"bold 46px 'Courier New',monospace",labelFont:"11px 'Courier New',monospace",menuBg:'#05050f',menuFg:'#00f0ff',particleColor:(l)=>`rgba(255,0,230,${l})`,puBg:'rgba(5,5,15,.95)',puText:'#00f0ff',brickColors:['#00f0ff','#ff00e6','#a855f7','#39ff14'],neonGlow:true},
-  deco:{name:'Deco',desc:'art deco gold',bg:'#08080e',fg:'#c9a84c',accent:'#f0e2b6',midline:'#1a1510',ballShape:'circle',paddleShape:'deco',scoreFont:"bold 46px Georgia,serif",labelFont:"11px Georgia,serif",menuBg:'#08080e',menuFg:'#c9a84c',particleColor:(l)=>{const g=Math.floor(168+l*40),r=Math.floor(200+l*55);return`rgba(${r},${g},76,${l})`;},puBg:'rgba(8,8,14,.95)',puText:'#f0e2b6',brickColors:['#c9a84c','#a0853a','#7a6530','#f0e2b6'],deco:true}
+  retro:{ui:{accent:'#f5f2f0',ink:'#121420',deep:'#9a9aa6'},name:'Retro',desc:'old & basic',bg:'#000',fg:'#fff',accent:'#fff',midline:'#2a2a2a',ballShape:'square',paddleShape:'rect',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#000',menuFg:'#fff',particleColor:(l)=>{const v=Math.floor(180+l*75);return`rgb(${v},${v},${v})`;},puBg:'rgba(30,30,30,.95)',puText:'#fff',brickColors:['#fff','#ccc','#aaa','#888']},
+  modern:{ui:{accent:'#b76d68',ink:'#121420',deep:'#8f5552'},name:'Modern',desc:'21st Century',bg:'#121420',fg:'#f5f2f0',accent:'#b76d68',midline:'#403f4c',ballShape:'pixel',paddleShape:'pixel',scoreFont:"64px 'Jersey 10',monospace",labelFont:"16px 'Jersey 15',monospace",menuBg:'#121420',menuFg:'#f5f2f0',menuPanel:'#1b2432',menuSoft:'#2c2b3c',particleColor:(l)=>`rgba(183,109,104,${l})`,puBg:'rgba(18,20,32,.95)',puText:'#f5f2f0',brickColors:['#b76d68','#403f4c','#2c2b3c','#1b2432'],modern:true},
+  abstract:{ui:{accent:'#cc2222',ink:'#f0e8d0',deep:'#861414'},name:'Abstract',desc:'bauhaus & bold',bg:'#0a0a0a',fg:'#cc2222',accent:'#f0e8d0',midline:'#1a1a1a',ballShape:'diamond',paddleShape:'thin',scoreFont:'bold 46px monospace',labelFont:'11px monospace',menuBg:'#0a0a0a',menuFg:'#cc2222',particleColor:(l)=>{const p=[[204,34,34],[50,80,180],[210,180,50]];const c=p[Math.floor(Math.random()*3)];return`rgba(${c[0]},${c[1]},${c[2]},${l})`;},chaos:true,bauhaus:true,puBg:'rgba(10,10,10,.95)',puText:'#f0e8d0',brickColors:['#cc2222','#f0e8d0','#3250b4','#d2b432']},
+  forest:{ui:{accent:'#d4a030',ink:'#121420',deep:'#8f6a1c'},name:'Forest',desc:'zen & tranquil',bg:'#060d06',fg:'#5a8a50',accent:'#d4a030',midline:'#0e1a0e',ballShape:'circle',paddleShape:'rounded',scoreFont:'bold 46px Georgia',labelFont:'11px Georgia',menuBg:'#060d06',menuFg:'#5a8a50',particleColor:(l)=>{const r=Math.floor(180+l*40),g=Math.floor(140+l*50);return`rgba(${r},${g},60,${l})`;},puBg:'rgba(6,13,6,.95)',puText:'#d4a030',brickColors:['#5a8a50','#3d6835','#8ab870','#d4a030'],zen:true},
+  neon:{ui:{accent:'#00f0ff',ink:'#05050f',deep:'#0090a0'},name:'Neon',desc:'cyberpunk glow',bg:'#05050f',fg:'#00f0ff',accent:'#ff00e6',midline:'#0a0a1a',ballShape:'circle',paddleShape:'rounded',scoreFont:"bold 46px 'Courier New',monospace",labelFont:"11px 'Courier New',monospace",menuBg:'#05050f',menuFg:'#00f0ff',particleColor:(l)=>`rgba(255,0,230,${l})`,puBg:'rgba(5,5,15,.95)',puText:'#00f0ff',brickColors:['#00f0ff','#ff00e6','#a855f7','#39ff14'],neonGlow:true},
+  deco:{ui:{accent:'#c9a84c',ink:'#121420',deep:'#86702f'},name:'Deco',desc:'art deco gold',bg:'#08080e',fg:'#c9a84c',accent:'#f0e2b6',midline:'#1a1510',ballShape:'circle',paddleShape:'deco',scoreFont:"bold 46px Georgia,serif",labelFont:"11px Georgia,serif",menuBg:'#08080e',menuFg:'#c9a84c',particleColor:(l)=>{const g=Math.floor(168+l*40),r=Math.floor(200+l*55);return`rgba(${r},${g},76,${l})`;},puBg:'rgba(8,8,14,.95)',puText:'#f0e2b6',brickColors:['#c9a84c','#a0853a','#7a6530','#f0e2b6'],deco:true}
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -187,10 +187,10 @@ function buildLeaderboard(){
     if(isSurv){if(v.survpb>0)entries.push([name,v]);}
     else{if(v.wins>0||v.losses>0)entries.push([name,v]);}
   }
-  if(!entries.length){lb.innerHTML='<div style="opacity:.3;font-size:11px;letter-spacing:1px;font-family:Georgia,serif;">no games played yet</div>';return;}
+  if(!entries.length){lb.innerHTML='<div class="lb-empty">No games yet. Finish a match and the results show up here.</div>';return;}
   if(isSurv){
     entries.sort((a,b)=>b[1].survpb-a[1].survpb);
-    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>Best Time</span><span>Last Played</span></div>`
+    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>Best time</span><span>Last played</span></div>`
       +entries.slice(0,8).map(([name,v])=>{
         const lp=v.lastPlayed?formatDate(v.lastPlayed):'—';
         const badges=playerBadges(name).map(id=>ACHIEVEMENTS[id]?.icon||'').join('');
@@ -199,7 +199,7 @@ function buildLeaderboard(){
   }else{
     entries.sort((a,b)=>b[1].wins-a[1].wins);
     const isBricks=tab==='bricks';
-    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>W</span><span>L</span><span>Rally PB</span>${isBricks?'<span>Bricks</span>':''}<span>Games</span></div>`
+    lb.innerHTML=`<div class="lb-row lb-head"><span>Name</span><span>W</span><span>L</span><span>Best rally</span>${isBricks?'<span>Bricks</span>':''}<span>Games</span></div>`
       +entries.slice(0,8).map(([name,v])=>{
         const badges=playerBadges(name).map(id=>ACHIEVEMENTS[id]?.icon||'').join('');
         return`<div class="lb-row"><span>${escapeHtml(name)} ${badges}</span><span>${v.wins}</span><span>${v.losses}</span><span>${v.rallypb||0}</span>${isBricks?`<span>${v.bricksBroken||0}</span>`:''}<span>${v.gamesPlayed||v.wins+v.losses}</span></div>`;
@@ -439,10 +439,19 @@ function setPongButton(id,icon,label){
   el.innerHTML=`${pongIcon(icon)}<span>${label}</span>`;
 }
 
+// Render controls as keycaps: [[['W','S'],'left paddle'],...]
+function setKeyLegend(id,items){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=items.map(([keys,label])=>`<span>${keys.map(k=>`<kbd>${k}</kbd>`).join('')} ${label}</span>`).join('');
+}
+// Shell font for canvas HUD text (scores keep each skin's own scoreFont)
+const UI_FONT="'Jersey 15',monospace";
+const DISPLAY_FONT="'Jersey 10',monospace";
+
 function decoratePongButtons(){
   const labels={
-    btn2p:`${pongIcon('multiplayer')}<span>2 Players</span>`,
-    btnai:`${pongIcon('bot')}<span>vs AI</span>`,
+    btn2p:`${pongIcon('multiplayer')}<span>2 players</span>`,
+    btnai:`${pongIcon('bot')}<span>Play vs AI</span>`,
     btntourney:`${pongIcon('trophy')}<span>Tournament</span>`,
     pbtn:`${pongIcon('pause')}<span>Pause</span>`,
     mutebtn:`${pongIcon('volume')}<span class="sr-only">Sound</span>`,
@@ -450,10 +459,11 @@ function decoratePongButtons(){
     rmbtn:`${pongIcon('menu')}<span>Menu</span>`,
     mrabtn:`${pongIcon('play')}<span>Rematch</span>`,
     mrmbtn:`${pongIcon('menu')}<span>Menu</span>`,
-    'tourney-add-human':`${pongIcon('p1')}<span>+ Player</span>`,
-    'tourney-add-ai':`${pongIcon('bot')}<span>+ AI</span>`,
-    'tourney-start-btn':`${pongIcon('play')}<span>Start Tournament</span>`,
-    'tourney-play-btn':`${pongIcon('play')}<span>Play Next Match</span>`,
+    menubtn:`${pongIcon('menu')}<span>Menu</span>`,
+    'tourney-add-human':`${pongIcon('p1')}<span>Add player</span>`,
+    'tourney-add-ai':`${pongIcon('bot')}<span>Add AI</span>`,
+    'tourney-start-btn':`${pongIcon('play')}<span>Start tournament</span>`,
+    'tourney-play-btn':`${pongIcon('play')}<span>Play next match</span>`,
     'surv-go-btn':`${pongIcon('play')}<span>Start</span>`,
     'btnonline':`${pongIcon('globe')}<span>Online</span>`
   };
@@ -466,10 +476,10 @@ function decoratePongButtons(){
 function buildSkinGrid(){
   const grid=document.getElementById('skin-grid');grid.innerHTML='';
   Object.entries(SKINS).forEach(([key,s])=>{
-    const btn=document.createElement('div');
-    btn.className='skin-btn'+(key===currentSkin?' active':'');
-    btn.style.background=s.menuBg;btn.style.color=s.menuFg;
-    btn.onclick=()=>{currentSkin=key;applyMenuSkin();buildSkinGrid();};
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='skin-btn'+(key===currentSkin?' active':'');
+    btn.setAttribute('aria-pressed',key===currentSkin);btn.title=`${s.name}: ${s.desc}`;
+    btn.onclick=()=>{currentSkin=key;applyMenuSkin();buildSkinGrid();grid.querySelector('.active')?.focus();};
     const prev=document.createElement('div');prev.className='skin-preview';prev.style.background=s.bg;
     const rx=s.paddleShape==='rounded'?3:s.paddleShape==='thin'?1:0;
     const decoMidline=s.modern?`<rect x="39" y="7" width="2" height="6" fill="${s.midline}"/><rect x="39" y="18" width="2" height="6" fill="${s.midline}"/><rect x="39" y="29" width="2" height="6" fill="${s.midline}"/><rect x="39" y="40" width="2" height="6" fill="${s.midline}"/>`:s.deco?`<polygon points="40,10 43,15 40,20 37,15" fill="${s.fg}" opacity=".15"/><polygon points="40,22 43,27 40,32 37,27" fill="${s.fg}" opacity=".15"/><polygon points="40,34 43,39 40,44 37,39" fill="${s.fg}" opacity=".15"/><circle cx="40" cy="25" r="12" fill="none" stroke="${s.fg}" stroke-width=".5" opacity=".1"/>`:s.zen?`<path d="M40,0 Q44,12 38,25 Q42,38 40,50" stroke="#3d6835" stroke-width="1" fill="none" opacity=".3"/><ellipse cx="44" cy="15" rx="3" ry="1.5" fill="#4a7a40" opacity=".2"/><ellipse cx="36" cy="35" rx="3" ry="1.5" fill="#4a7a40" opacity=".2"/>`:s.bauhaus?`<line x1="40" y1="0" x2="40" y2="50" stroke="#f0e8d0" stroke-width="1.5" opacity=".12"/><circle cx="40" cy="12" r="3" fill="none" stroke="#f0e8d0" stroke-width=".5" opacity=".1"/><circle cx="40" cy="38" r="3" fill="none" stroke="#f0e8d0" stroke-width=".5" opacity=".1"/>`:`<line x1="40" y1="0" x2="40" y2="50" stroke="${s.midline}" stroke-width="1" stroke-dasharray="4,4"/>`;
@@ -477,7 +487,7 @@ function buildSkinGrid(){
     const decoRays=s.deco?[0,1,2,3,4,5,6,7].map(i=>{const a=i*Math.PI/4;return`<line x1="40" y1="25" x2="${40+Math.cos(a)*35}" y2="${25+Math.sin(a)*22}" stroke="${s.fg}" stroke-width=".5" opacity=".04"/>`;}).join(''):'';
     const zenBg=s.zen?`<line x1="16" y1="0" x2="16" y2="50" stroke="#2a4a20" stroke-width="1.5" opacity=".08"/><line x1="64" y1="0" x2="64" y2="50" stroke="#2a4a20" stroke-width="1.5" opacity=".08"/><ellipse cx="22" cy="10" rx="4" ry="2" fill="#5a8a50" opacity=".12" transform="rotate(-20,22,10)"/><ellipse cx="58" cy="40" rx="4" ry="2" fill="#d4a030" opacity=".12" transform="rotate(15,58,40)"/>`:'';
     const bauhausBg=s.bauhaus?`<line x1="0" y1="0" x2="80" y2="50" stroke="#cc2222" stroke-width=".5" opacity=".06"/><line x1="80" y1="0" x2="0" y2="50" stroke="#cc2222" stroke-width=".5" opacity=".06"/><rect x="10" y="8" width="10" height="18" fill="#cc2222" opacity=".05"/><circle cx="62" cy="16" r="8" fill="#3250b4" opacity=".05"/><rect x="50" y="32" width="14" height="10" fill="#d2b432" opacity=".05"/>`:'';
-    prev.innerHTML=`<svg width="80" height="50" xmlns="http://www.w3.org/2000/svg">
+    prev.innerHTML=`<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg">
       ${decoRays}${zenBg}${bauhausBg}${decoMidline}${decoPaddle}
       ${s.ballShape==='pixel'?`<rect x="36" y="21" width="8" height="8" fill="${s.accent}"/><rect x="34" y="23" width="12" height="4" fill="${s.accent}"/>`
         :s.ballShape==='circle'?`<circle cx="40" cy="25" r="4" fill="${s.accent}"/>`
@@ -488,41 +498,17 @@ function buildSkinGrid(){
       ${s.deco?`<circle cx="40" cy="25" r="6" fill="none" stroke="${s.fg}" stroke-width=".5" opacity=".2"/>`:''}
     </svg>`;
     btn.appendChild(prev);
-    const lbl=document.createElement('div');lbl.textContent=s.name;
-    const desc=document.createElement('div');desc.style.opacity='.5';desc.style.fontSize='10px';desc.textContent=s.desc;
-    btn.appendChild(lbl);btn.appendChild(desc);grid.appendChild(btn);
+    const lbl=document.createElement('span');lbl.textContent=s.name;
+    btn.appendChild(lbl);grid.appendChild(btn);
   });
 }
 function applyMenuSkin(){
-  const s=SKINS[currentSkin],pw=document.getElementById('pw');
-  // All skins use modern's dark background to frame the page consistently
-  const m=SKINS.modern;
-  const bg=`radial-gradient(circle at 50% 0%, ${m.menuPanel} 0%, ${m.menuBg} 58%, #0b111c 100%)`;
-  pw.style.background=bg;pw.style.color=s.menuFg;
-  document.body.style.background=bg;
-  document.documentElement.style.background=m.menuBg;
-  document.body.classList.toggle('skin-modern',!!s.modern);
-  document.getElementById('menu-title').style.color=s.menuFg;
-  document.querySelectorAll('.btn').forEach(b=>{b.style.background=s.menuFg;b.style.color=s.menuBg;});
-  document.querySelectorAll('.opt-btn').forEach(b=>{b.style.borderColor=s.menuFg;b.style.color=s.menuFg;b.style.setProperty('--menu-bg',s.menuBg);b.style.setProperty('--menu-fg',s.menuFg);});
-  document.querySelectorAll('.name-input').forEach(b=>{b.style.borderColor=s.menuFg;b.style.color=s.menuFg;});
+  const u=SKINS[currentSkin].ui,root=document.documentElement.style;
+  root.setProperty('--accent',u.accent);root.setProperty('--accent-ink',u.ink);root.setProperty('--accent-deep',u.deep);
 }
 function applyGameSkin(){
-  const s=SKINS[currentSkin];
-  // Always use modern skin's dark background outside the canvas to frame the
-  // game window nicely, regardless of which skin is active.  The canvas itself
-  // draws with s.bg internally, so in-game colours are unchanged.
-  const m=SKINS.modern;
-  const pageBg=`radial-gradient(circle at 50% 0%, ${m.menuPanel} 0%, ${m.menuBg} 58%, #0b111c 100%)`;
-  document.getElementById('pw').style.background=pageBg;
-  document.body.style.background=pageBg;
-  document.documentElement.style.background=m.menuBg;
+  applyMenuSkin();
   // Rounded canvas corners for all skins except retro
   const cw=document.getElementById('canvas-wrap');
   if(cw)cw.classList.toggle('rounded',currentSkin!=='retro');
-  document.getElementById('bar').style.color=s.fg;
-  document.querySelectorAll('.btn-o').forEach(b=>b.style.color=s.fg);
-  document.getElementById('mlabel').style.color=s.fg;
-  document.getElementById('kb-legend').style.color=s.fg;
-  document.getElementById('vol-slider').style.color=s.fg;
 }

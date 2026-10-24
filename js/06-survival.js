@@ -53,7 +53,6 @@ function survBuildRow(y){
 
 function survInit(){
   resizeCanvas(700,550);
-  const sk=SKINS[currentSkin];
   const pw=130,ph=12;
   survDecoyBalls=[];survExtraBalls=[];
   fieldPowerups=[];activePowerups=[];
@@ -93,21 +92,12 @@ function survStartMatch(m){
 function survShowTurnScreen(){
   if(animId)cancelAnimationFrame(animId);
   resizeCanvas(700,450);window.scrollTo(0,0);
-  const sk=SKINS[currentSkin];
   const name=survTurn==='left'?nameLeft:nameRight;
   const otherTime=survTurn==='left'?null:survTimes.left;
   document.querySelectorAll('#menu,#game-over,#match-over,#game-ui,#surv-turn').forEach(e=>e.style.display='none');
-  ['pw','surv-turn'].forEach(id=>{
-    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
   document.getElementById('surv-turn-txt').textContent=`${name}'s turn`;
-  document.getElementById('surv-turn-txt').style.color=sk.menuFg;
   const info=otherTime!==null?`${nameLeft} survived ${(otherTime/1000).toFixed(1)}s — beat that!`:'Survive as long as you can!';
   document.getElementById('surv-turn-info').textContent=info;
-  document.getElementById('surv-turn-info').style.color=sk.menuFg;
-  document.getElementById('surv-go-btn').style.background=sk.menuFg;
-  document.getElementById('surv-go-btn').style.color=sk.menuBg;
   document.getElementById('surv-turn').style.display='flex';
 }
 
@@ -115,8 +105,8 @@ function survStartTurn(){
   document.querySelectorAll('#surv-turn,#menu,#game-over,#match-over').forEach(e=>e.style.display='none');
   document.getElementById('game-ui').style.display='flex';
   const name=survTurn==='left'?nameLeft:nameRight;
-  document.getElementById('mlabel').textContent=`${name} · SURVIVAL`;
-  document.getElementById('kb-legend').textContent='A/D or ←/→ move · P pause · +/− volume · space release magnet · T test panel';
+  document.getElementById('mlabel').textContent=`Survival, ${name}'s turn`;
+  setKeyLegend('kb-legend',[[['A','D'],'move'],[['Space'],'release ball'],[['P'],'pause']]);
   applyGameSkin();
   survInit();
   keys={};lastFrameTime=0;
@@ -505,17 +495,17 @@ function survDraw(now){
 
   // Timer
   const elapsed=(now-sv.startTime)/1000;
-  ctx.fillStyle=sk.fg;ctx.font='bold 28px monospace';ctx.textAlign='center';
+  ctx.fillStyle=sk.fg;ctx.font='48px '+DISPLAY_FONT;ctx.textAlign='center';
   ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=10;
   ctx.fillText(elapsed.toFixed(1)+'s',W/2,36);ctx.restore();
 
   // Score
-  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.5;
+  ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.5;
   ctx.fillText(`bricks: ${sv.score}`,W/2,52);ctx.globalAlpha=1;
 
   // Player name
   const name=survTurn==='left'?nameLeft:nameRight;
-  ctx.font='10px monospace';ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;
+  ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;
   ctx.fillText(name,W/2,H-6);ctx.globalAlpha=1;
 
   // Draw bricks
@@ -726,7 +716,7 @@ function survDraw(now){
   if(survBomb){
     ctx.save();ctx.strokeStyle='#ff4500';ctx.lineWidth=2;ctx.globalAlpha=.6+.4*Math.sin(now/150);
     ctx.beginPath();ctx.arc(bx+BS/2,by+BS/2,BS/2+4,0,Math.PI*2);ctx.stroke();
-    ctx.font='bold 8px monospace';ctx.fillStyle='#ff4500';ctx.textAlign='center';ctx.globalAlpha=.8;
+    ctx.font='13px '+UI_FONT;ctx.fillStyle='#ff4500';ctx.textAlign='center';ctx.globalAlpha=.8;
     ctx.fillText('💣',bx+BS/2,by-4);
     ctx.restore();
   }
@@ -737,7 +727,7 @@ function survDraw(now){
     ctx.setLineDash([3,3]);
     ctx.beginPath();ctx.moveTo(bx+BS/2,by);ctx.lineTo(bx+BS/2,by-30);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font='bold 8px monospace';ctx.fillStyle='#f472b6';ctx.textAlign='center';
+    ctx.font='13px '+UI_FONT;ctx.fillStyle='#f472b6';ctx.textAlign='center';
     ctx.fillText('SPACE to launch',bx+BS/2,by-35);
     ctx.restore();
   }
@@ -781,15 +771,15 @@ function survDraw(now){
   drawActivePuHud(now);
 
   // Mode label
-  ctx.save();ctx.font='bold 9px monospace';ctx.fillStyle='#22c55e';
+  ctx.save();ctx.font='14px '+UI_FONT;ctx.fillStyle='#22c55e';
   ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText('SURVIVAL',6,14);
   ctx.globalAlpha=1;ctx.restore();
 
   // Pause overlay
   if(paused){
     ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
-    ctx.fillStyle=sk.fg;ctx.font='bold 34px monospace';ctx.textAlign='center';ctx.fillText('PAUSED',W/2,H/2-10);
-    ctx.font='13px monospace';ctx.fillStyle=sk.accent;ctx.fillText('press P to resume',W/2,H/2+22);
+    ctx.fillStyle=sk.fg;ctx.font='72px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
+    ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
   }
 
   ctx.restore();
@@ -797,7 +787,6 @@ function survDraw(now){
 
 function survEndTurn(time){
   cancelAnimationFrame(animId);
-  const sk=SKINS[currentSkin];
   const name=survTurn==='left'?nameLeft:nameRight;
   recordSurvivalTime(name,time);
   checkSurvivalAchievements(name,time);
@@ -815,17 +804,9 @@ function survEndTurn(time){
       const t1=time;
       const wname=nameLeft;
       const isPB=recordSurvivalTime(wname,t1);
-      ['pw','game-over'].forEach(id=>{
-        const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-      });
-      document.body.style.background=sk.menuBg;
       document.getElementById('wtxt').textContent=`${wname} survived!`;
-      document.getElementById('wtxt').style.color=sk.menuFg;
       document.getElementById('wscr').textContent=`${(t1/1000).toFixed(1)}s`;
-      document.getElementById('wscr').style.color=sk.menuFg;
       document.getElementById('wmatch').textContent=isPB?'New personal best!':'';
-      document.getElementById('wmatch').style.color=sk.menuFg;
-      ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
       setPongButton('rabtn','play','Play again');
       document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
       const badgePop=document.getElementById('badge-pop');
@@ -848,17 +829,9 @@ function survEndTurn(time){
     const t1=survTimes.left||0,t2=survTimes.right||0;
     const winner=t1>=t2?'left':'right';
     const wname=winner==='left'?nameLeft:nameRight;
-    ['pw','game-over'].forEach(id=>{
-      const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-    });
-    document.body.style.background=sk.menuBg;
     document.getElementById('wtxt').textContent=`${wname} wins!`;
-    document.getElementById('wtxt').style.color=sk.menuFg;
     document.getElementById('wscr').textContent=`${nameLeft}: ${(t1/1000).toFixed(1)}s — ${nameRight}: ${(t2/1000).toFixed(1)}s`;
-    document.getElementById('wscr').style.color=sk.menuFg;
     document.getElementById('wmatch').textContent=`${wname} survived longer!`;
-    document.getElementById('wmatch').style.color=sk.menuFg;
-    ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
     setPongButton('rabtn','play','Play again');
     document.getElementById('rabtn').onclick=()=>survStartMatch(lastMode);
     document.getElementById('game-ui').style.display='none';

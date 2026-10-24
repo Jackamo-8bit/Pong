@@ -35,10 +35,10 @@ function startSet(){
   document.getElementById('match-over').style.display='none';
   document.getElementById('game-ui').style.display='flex';
   setPongButton('pbtn',paused?'play':'pause',paused?'Resume':'Pause');
-  const setInfo=matchFormat>1?` · Set ${currentSet}`:'';
-  const modeTag=gameMode!=='classic'?` [${gameMode.toUpperCase()}]`:'';
-  document.getElementById('mlabel').textContent=`${nameLeft} vs ${nameRight}${setInfo}${modeTag}`;
-  document.getElementById('kb-legend').textContent='W/S left · \u2191/\u2193 right · P pause · +/\u2212 volume · space serve · aim W/S \u2191\u2193 · T test panel';
+  const modeName=gameMode[0].toUpperCase()+gameMode.slice(1);
+  const setInfo=matchFormat>1?`, set ${currentSet} (best of ${matchFormat})`:'';
+  document.getElementById('mlabel').textContent=`${modeName}, first to ${winScore}${setInfo}`;
+  setKeyLegend('kb-legend',[[['W','S'],'left paddle'],[['\u2191','\u2193'],'right paddle'],[['Space'],'serve'],[['P'],'pause']]);
   applyGameSkin();
   state=initGameState();keys={};lastFrameTime=0;
   if(animId)cancelAnimationFrame(animId);
@@ -109,20 +109,10 @@ function endSet(winner){
   if(onlineRole==='host'&&onlineConn&&onlineConn.open){
     onlineConn.send({type:'setEnd',winner,ls:state.left.score,rs:state.right.score,matchSets});
   }
-  const sk=SKINS[currentSkin];
   matchSets[winner]++;
   const setsNeeded=Math.ceil(matchFormat/2);
   const matchOver=matchSets.left>=setsNeeded||matchSets.right>=setsNeeded||matchFormat===1;
 
-  ['pw','game-over'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
-  document.getElementById('wtxt').style.color=sk.menuFg;
-  document.getElementById('wscr').style.color=sk.menuFg;
-  document.getElementById('wmatch').style.color=sk.menuFg;
-  ['rabtn','rmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
 
   const wname=playerName(winner),lname=opponentName(winner);
   const brickNote=gameMode==='bricks'&&brickPoints[winner]>0?` (${brickPoints[winner]} bricks broken)`:'';
@@ -132,7 +122,7 @@ function endSet(winner){
   let pbNote='';
   const isPB=recordRallyPB(wname,sessionRallyPB)||recordRallyPB(lname,sessionRallyPB);
   if(sessionRallyPB>0){
-    pbNote=`rally: ${sessionRallyPB} hits${isPB?' 🏆 new pb!':''}`;
+    pbNote=`Longest rally: ${sessionRallyPB} hits${isPB?', a new best!':''}`;
   }
 
   if(matchFormat>1){
@@ -182,17 +172,9 @@ function showMatchOver(){
   if(tourney){
     if(tourneyOnMatchEnd(winner))return;
   }
-  const sk=SKINS[currentSkin];
   const wname=playerName(winner);
-  ['pw','match-over'].forEach(id=>{
-    const el=document.getElementById(id);el.style.background=sk.menuBg;el.style.color=sk.menuFg;
-  });
-  document.body.style.background=sk.menuBg;
   document.getElementById('mtxt').textContent=`${wname} wins the match!`;
-  document.getElementById('mtxt').style.color=sk.menuFg;
   document.getElementById('mscr').textContent=`${nameLeft} ${matchSets.left} — ${matchSets.right} ${nameRight}`;
-  document.getElementById('mscr').style.color=sk.menuFg;
-  ['mrabtn','mrmbtn'].forEach(id=>{document.getElementById(id).style.background=sk.menuFg;document.getElementById(id).style.color=sk.menuBg;});
   document.getElementById('game-over').style.display='none';
   document.getElementById('match-over').style.display='flex';
 }
