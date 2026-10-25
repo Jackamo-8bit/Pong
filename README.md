@@ -35,6 +35,16 @@ You can also pass a custom port:
 python3 serve.py 3000
 ```
 
+## Testing
+
+A smoke test opens the game in headless Chrome or Edge and plays it: every mode, every skin, a Survival round, the ladder, saved settings, an online match between two windows (including a dropped connection), and loading offline. It needs Node 22 or newer and nothing else:
+
+```bash
+node tests/smoke.mjs
+```
+
+Add `--no-online` to skip the online check, which needs internet. If no browser is found, set `CHROME=/path/to/browser`.
+
 ## Controls
 
 - Left paddle: `W` / `S`
@@ -67,6 +77,9 @@ js/05-rendering.js
 js/06-survival.js
 js/07-tournament.js
 js/08-boot-and-test.js
+js/09-online.js
+js/10-ladder.js
+tests/smoke.mjs
 serve.py
 manifest.json
 sw.js
