@@ -82,6 +82,7 @@ js/10-ladder.js
 tests/smoke.mjs
 serve.py
 manifest.json
+icon.svg
 sw.js
 ```
 
