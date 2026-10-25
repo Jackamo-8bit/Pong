@@ -76,6 +76,10 @@ function setGameMode(m){
 let currentSkin='modern', winScore=7, matchFormat=1, aiDiff='medium';
 let nameLeft='Player 1', nameRight='Player 2';
 
+// Player settings (volume, vibration, motion), saved in the browser
+const SETTINGS=(()=>{try{return JSON.parse(localStorage.getItem('pong_settings')||'{}');}catch{return {};}})();
+function saveSetting(k,v){SETTINGS[k]=v;try{localStorage.setItem('pong_settings',JSON.stringify(SETTINGS));}catch{}}
+
 function loadStats(){try{return JSON.parse(localStorage.getItem('pong_stats')||'{}');}catch{return {};}}
 function saveStats(s){try{localStorage.setItem('pong_stats',JSON.stringify(s));}catch{}}
 function getPlayerStats(name,gm){
@@ -353,7 +357,8 @@ function rallySpeedBonus(hits){
 }
 
 let mode,animId,paused=false,state,particles=[];
-const prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Follows the system setting until the player picks one in Settings
+let prefersReducedMotion=SETTINGS.motion?SETTINGS.motion==='reduced':window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TARGET_FRAME_MS=1000/60; // 16.667ms — normalize dt so 1.0 = 60fps
 let lastFrameTime=0;
 let _drawDt=1; // passed to draw functions for visual decay
@@ -413,6 +418,17 @@ function opponentName(side){return side==='left'?nameRight:nameLeft;}
 function setWin(n){winScore=n;document.querySelectorAll('#score-opts .opt-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.score===n));}
 function setDiff(d){aiDiff=d;document.querySelectorAll('#diff-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.diff===d));}
 function setMatch(n){matchFormat=n;document.querySelectorAll('#match-opts .opt-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.match===n));}
+function setHaptics(on,save=true){
+  if(save){saveSetting('haptics',on);if(on)haptic(20);}
+  document.querySelectorAll('#haptic-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.on===String(on)));
+}
+function setMotion(reduced,save=true){
+  if(save)saveSetting('motion',reduced?'reduced':'full');
+  prefersReducedMotion=reduced;
+  if(reduced)shakeAmt=0;
+  document.body.classList.toggle('reduce-motion',reduced);
+  document.querySelectorAll('#motion-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.reduced===String(reduced)));
+}
 
 function pongIcon(name){
   // Trophy and globe use inline SVG for more detailed pixel art
