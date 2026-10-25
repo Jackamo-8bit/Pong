@@ -89,6 +89,12 @@
       <label class="setup-label" for="set-vol">Volume</label>
       <input type="range" class="vol-slider" id="set-vol" min="0" max="100" value="80" oninput="setVolume(this.value)">
 
+      <span class="setup-label" id="lbl-music">Music</span>
+      <div class="seg" id="music-opts" role="group" aria-labelledby="lbl-music">
+        <button class="opt-btn" data-on="true"  onclick="setMusic(true)">On</button>
+        <button class="opt-btn" data-on="false" onclick="setMusic(false)">Off</button>
+      </div>
+
       <span class="setup-label haptic-row" id="lbl-haptic">Vibration</span>
       <div class="seg haptic-row" id="haptic-opts" role="group" aria-labelledby="lbl-haptic">
         <button class="opt-btn" data-on="true"  onclick="setHaptics(true)">On</button>

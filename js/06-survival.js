@@ -771,6 +771,7 @@ function survDraw(now){
 
 function survEndTurn(time){
   cancelAnimationFrame(animId);
+  exitGameplay();
   const name=survTurn==='left'?nameLeft:nameRight;
   recordSurvivalTime(name,time);
   checkSurvivalAchievements(name,time);

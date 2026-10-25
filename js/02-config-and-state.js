@@ -418,6 +418,10 @@ function opponentName(side){return side==='left'?nameRight:nameLeft;}
 function setWin(n){winScore=n;document.querySelectorAll('#score-opts .opt-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.score===n));}
 function setDiff(d){aiDiff=d;document.querySelectorAll('#diff-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.diff===d));}
 function setMatch(n){matchFormat=n;document.querySelectorAll('#match-opts .opt-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.match===n));}
+function setMusic(on,save=true){
+  if(save)saveSetting('music',on);
+  document.querySelectorAll('#music-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.on===String(on)));
+}
 function setHaptics(on,save=true){
   if(save){saveSetting('haptics',on);if(on)haptic(20);}
   document.querySelectorAll('#haptic-opts .opt-btn').forEach(b=>b.classList.toggle('sel',b.dataset.on===String(on)));
