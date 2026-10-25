@@ -11,6 +11,10 @@ let onlineRoomCode='';
 let onlineRTT=0;
 let _onlinePingInterval=null;
 let _guestAnimId=null;
+// Reconnect: once a match has started, a silent or closed link pauses the game and both sides
+// try to get back together for up to a minute (the guest redials, the host keeps the room open)
+const LINK_TIMEOUT=5000, RECONNECT_MS=60000;
+let _lastRecv=0, _reconnecting=false, _lostAt=0, _watchdog=null;
 
 // ── Send-rate management ──
 let _lastStateSend=0, _lastInputSend=0;
@@ -237,18 +241,36 @@ function onlineHost(){
 
 function _onHostConnection(conn){
   console.log('[Online] Incoming connection, opening data channel...');
-  if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
-  onlineConn=conn;
-  _olEl['online-host-status'].textContent='opponent found — establishing link...';
-  _monitorICE(conn,'host-status');
+  // Once the match has started, only the returning guest (hello with rejoin) may take the seat
+  const rejoining=!!_watchdog;
+  if(!rejoining){
+    if(_hostConnTimeout){clearTimeout(_hostConnTimeout);_hostConnTimeout=null;}
+    onlineConn=conn;
+    _olEl['online-host-status'].textContent='opponent found — establishing link...';
+    _monitorICE(conn,'host-status');
+  }
 
   conn.on('open',()=>{
     console.log('[Online] Host: data channel open');
     conn.send({type:'hello',name:_getOnlineName()||'Player 1',skin:currentSkin});
+    if(rejoining) return;
     _olEl['online-host-status'].textContent='✓ connected!';
     _detectRelay(conn); // check if using TURN relay for send-rate adaptation
   });
   conn.on('data',data=>{
+    if(conn!==onlineConn){
+      if(!rejoining) return;
+      if(data.type!=='hello'||!data.rejoin){conn.close();return;}
+      const old=onlineConn; onlineConn=conn;
+      if(old){try{old.close();}catch(e){}}
+      _pauseForLink();
+      _lastBricksAlive=-1; // guest may have missed brick updates
+      _detectRelay(conn);
+      conn.send({type:'resume',paused});
+      _onlineResumed();
+      return;
+    }
+    _lastRecv=performance.now();
     if(data.type==='hello'){
       nameRight=data.name||'Guest';
       _olEl['online-opponent-name'].textContent='vs '+nameRight;
@@ -259,10 +281,10 @@ function _onHostConnection(conn){
       onlineHostReceive(data);
     }
   });
-  conn.on('close',()=>onlineDisconnected());
+  conn.on('close',()=>{if(conn===onlineConn)_onlineLinkLost();});
   conn.on('error',e=>{
     console.warn('[Online] Host data channel error:',e);
-    _olEl['online-host-status'].textContent='✗ connection failed — ask opponent to retry';
+    if(!rejoining)_olEl['online-host-status'].textContent='✗ connection failed — ask opponent to retry';
   });
 }
 
@@ -291,6 +313,7 @@ function onlineJoin(){
   onlineConn=null;
   _olEl['online-join-status'].textContent='① connecting to server...';
   onlineRole='guest';
+  onlineRoomCode=code; // kept for rejoining after a drop
 
   try{
     onlinePeer=new Peer(PEER_CONFIG);
@@ -339,20 +362,7 @@ function onlineJoin(){
       onlineConn.send({type:'hello',name:_getOnlineName()||'Player 2'});
       _detectRelay(onlineConn);
     });
-    onlineConn.on('data',data=>{
-      if(data.type==='hello'){
-        nameLeft=data.name||'Host';
-        if(data.skin){currentSkin=data.skin;applyMenuSkin();}
-        _olEl['online-opponent-name'].textContent='vs '+nameLeft;
-        _olShowSub('online-pregame');
-        _olEl['online-host-settings'].style.display='none';
-        _olEl['online-guest-wait'].style.display='';
-        _olEl['online-guest-settings-label'].textContent='waiting for '+nameLeft+' to start...';
-      }else{
-        onlineGuestReceive(data);
-      }
-    });
-    onlineConn.on('close',()=>onlineDisconnected());
+    _wireGuestConn(onlineConn);
     onlineConn.on('error',e=>{
       console.warn('[Online] Guest data channel error:',e);
       if(_guestConnTimeout){clearTimeout(_guestConnTimeout);_guestConnTimeout=null;}
@@ -378,6 +388,56 @@ function onlineJoin(){
   onlinePeer.on('disconnected',()=>{
     console.warn('[Online] Guest lost signaling, reconnecting...');
     try{onlinePeer.reconnect();}catch(e){}
+  });
+}
+
+function _wireGuestConn(conn){
+  conn.on('data',data=>{
+    if(conn!==onlineConn) return;
+    _lastRecv=performance.now();
+    if(data.type==='hello'){
+      if(_reconnecting) return; // the host greets every new link; only the first one opens the lobby
+      nameLeft=data.name||'Host';
+      if(data.skin){currentSkin=data.skin;applyMenuSkin();}
+      _olEl['online-opponent-name'].textContent='vs '+nameLeft;
+      _olShowSub('online-pregame');
+      _olEl['online-host-settings'].style.display='none';
+      _olEl['online-guest-wait'].style.display='';
+      _olEl['online-guest-settings-label'].textContent='waiting for '+nameLeft+' to start...';
+    }else if(data.type==='resume'){
+      _netTargets._started=false; // snap to the host's positions
+      if(paused!==data.paused) togglePause(true);
+      _onlineResumed();
+    }else{
+      onlineGuestReceive(data);
+    }
+  });
+  conn.on('close',()=>{if(conn===onlineConn)_onlineLinkLost();});
+}
+
+// Guest: dial the same room with a fresh peer until the host answers or time runs out
+function _guestRejoin(){
+  if(!_reconnecting||onlineRole!=='guest') return;
+  if(onlinePeer){try{onlinePeer.destroy();}catch(e){}}
+  const peer=onlinePeer=new Peer(PEER_CONFIG);
+  let done=false;
+  const retry=()=>{
+    if(done) return; done=true;
+    try{peer.destroy();}catch(e){}
+    if(onlinePeer===peer) setTimeout(_guestRejoin,2000);
+  };
+  const timer=setTimeout(retry,10000);
+  peer.on('error',retry);
+  peer.on('open',()=>{
+    const conn=peer.connect(peerIdFromCode(onlineRoomCode),{reliable:true,serialization:'json'});
+    _wireGuestConn(conn);
+    conn.on('open',()=>{
+      done=true; clearTimeout(timer);
+      onlineConn=conn;
+      conn.send({type:'hello',name:_getOnlineName()||'Player 2',rejoin:true});
+      _detectRelay(conn);
+    });
+    conn.on('error',retry);
   });
 }
 
@@ -749,11 +809,22 @@ function _startPing(){
       if(onlineConn&&onlineConn.open) onlineConn.send({type:'ping',t:performance.now(),rtt:onlineRTT});
     },2000);
   }
+  // The host pings every 2s and the guest answers, so silence longer than LINK_TIMEOUT means the link is gone
+  _lastRecv=performance.now();
+  _watchdog=setInterval(()=>{
+    const now=performance.now();
+    if(!_reconnecting){if(now-_lastRecv>LINK_TIMEOUT)_onlineLinkLost();return;}
+    if(now-_lostAt>RECONNECT_MS){_onlineGiveUp();return;}
+    // Host: if its own network dropped, keep re-registering the room with the signalling server
+    if(onlineRole==='host'&&onlinePeer&&onlinePeer.disconnected&&!onlinePeer.destroyed){try{onlinePeer.reconnect();}catch(e){}}
+  },1000);
   const el=_olEl['online-ping']||document.getElementById('online-ping');
   if(el) el.style.display='inline';
 }
 function _stopPing(){
   if(_onlinePingInterval){clearInterval(_onlinePingInterval);_onlinePingInterval=null;}
+  if(_watchdog){clearInterval(_watchdog);_watchdog=null;}
+  _reconnecting=false;
   const el=document.getElementById('online-ping');
   if(el){el.style.display='none';el.textContent='';}
 }
@@ -771,8 +842,42 @@ function onlineDisconnected(){
   _stopPing();
   if(_guestAnimId){cancelAnimationFrame(_guestAnimId);_guestAnimId=null;}
   if(animId){cancelAnimationFrame(animId);animId=null;}
+  _showLinkNotice('Connection lost','Your opponent disconnected.');
+}
+
+function _showLinkNotice(title,text){
   const overlay=document.getElementById('online-disconnect');
-  if(overlay) overlay.style.display='flex';
+  overlay.querySelector('.notice-title').textContent=title;
+  overlay.querySelector('.notice-text').textContent=text;
+  overlay.style.display='flex';
+}
+function _pauseForLink(){if(!paused&&inGameplay)togglePause(true);}
+
+function _onlineLinkLost(){
+  if(!_watchdog){onlineDisconnected();return;} // still in the lobby: nothing to resume
+  if(_reconnecting){if(onlineRole==='guest')setTimeout(_guestRejoin,2000);return;} // a rejoin link closed: try again
+  console.warn('[Online] Link lost, trying to reconnect...');
+  _reconnecting=true; _lostAt=performance.now();
+  const old=onlineConn; onlineConn=null;
+  if(old){try{old.close();}catch(e){}}
+  _pauseForLink();
+  _showLinkNotice('Reconnecting…',onlineRole==='guest'
+    ?'Lost the connection. Trying to reach '+nameLeft+' again…'
+    :'Lost the connection. Waiting for '+nameRight+' to come back…');
+  if(onlineRole==='guest')_guestRejoin();
+}
+
+function _onlineResumed(){
+  console.log('[Online] Reconnected');
+  _reconnecting=false; _lastRecv=performance.now();
+  document.getElementById('online-disconnect').style.display='none';
+}
+
+function _onlineGiveUp(){
+  _stopPing();
+  _showLinkNotice('Connection lost',onlineRole==='guest'
+    ?'Couldn’t reach '+nameLeft+' again.'
+    :nameRight+' didn’t come back.');
 }
 
 function onlineDismissDisconnect(){
