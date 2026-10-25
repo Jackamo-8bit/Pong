@@ -83,6 +83,26 @@
     <span><kbd>P</kbd> pause</span>
   </div>
 
+  <details class="settings">
+    <summary class="btn-o">Settings</summary>
+    <div class="setup">
+      <label class="setup-label" for="set-vol">Volume</label>
+      <input type="range" class="vol-slider" id="set-vol" min="0" max="100" value="80" oninput="setVolume(this.value)">
+
+      <span class="setup-label haptic-row" id="lbl-haptic">Vibration</span>
+      <div class="seg haptic-row" id="haptic-opts" role="group" aria-labelledby="lbl-haptic">
+        <button class="opt-btn" data-on="true"  onclick="setHaptics(true)">On</button>
+        <button class="opt-btn" data-on="false" onclick="setHaptics(false)">Off</button>
+      </div>
+
+      <span class="setup-label" id="lbl-motion">Motion</span>
+      <div class="seg" id="motion-opts" role="group" aria-labelledby="lbl-motion">
+        <button class="opt-btn" data-reduced="false" onclick="setMotion(false)">Full</button>
+        <button class="opt-btn" data-reduced="true"  onclick="setMotion(true)">Reduced</button>
+      </div>
+    </div>
+  </details>
+
   <section class="fame" aria-labelledby="lb-title">
     <div class="fame-head">
       <h2 id="lb-title">Hall of fame</h2>

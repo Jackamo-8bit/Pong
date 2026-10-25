@@ -49,6 +49,8 @@ function toggleMute(){muted=!muted;setPongButton('mutebtn','volume',muted?'Muted
 function setVolume(v){
   masterVolume=v/100;
   if(masterGain)masterGain.gain.value=masterVolume;
+  saveSetting('vol',+v);
+  document.querySelectorAll('.vol-slider').forEach(s=>s.value=v);
   if(v==0&&!muted)toggleMute();
   if(v>0&&muted){muted=false;setPongButton('mutebtn','volume','Sound');}
 }
@@ -111,7 +113,7 @@ function playCountdownBeep(n){
 }
 
 // Haptic feedback for mobile
-function haptic(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch{}}
+function haptic(ms){if(SETTINGS.haptics===false)return;try{navigator.vibrate&&navigator.vibrate(ms);}catch{}}
 // Wrap a sound set so each call also triggers haptic feedback,
 // and an online host replays it on the guest (power-ups go via puPopup instead)
 const BUZZ={paddle:12,wall:8,brick:15,powerup:[20,10,20],score:40,gameWin:[30,20,30,20,50]};
