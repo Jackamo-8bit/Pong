@@ -103,7 +103,7 @@ canvas{display:block;}
 .keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;font-size:18px;color:var(--mist);}
 .keys span{display:inline-flex;align-items:center;gap:4px;}
 kbd{font-family:var(--ui);font-size:16px;min-width:22px;padding:2px 6px;text-align:center;color:var(--chalk);background:var(--plum);box-shadow:inset 0 -2px 0 var(--line);clip-path:var(--notch);}
-@media (hover:none){.keys{display:none!important;}}
+@media (hover:none){.keys,.key-hint{display:none!important;}}
 
 /* hall of fame */
 .fame{width:100%;margin-top:10px;}
@@ -293,4 +293,9 @@ kbd{font-family:var(--ui);font-size:16px;min-width:22px;padding:2px 6px;text-ali
   #bar{margin-top:2px!important;gap:6px!important;padding:2px 8px!important;}
   #mlabel,#kb-legend{display:none;}
   #menu{padding:8px 0;gap:10px;}
+  /* Buttons stack in the top-left gutter so the court can use the full height (matches SIDE_BAR_QUERY) */
+  body.in-gameplay #bar{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));width:auto;flex-direction:column;align-items:stretch;padding:0!important;margin:0!important;z-index:2;}
+  body.in-gameplay .bar-actions,body.in-gameplay .vol-wrap{flex-direction:column;align-items:stretch;gap:6px;}
+  body.in-gameplay .vol-slider{display:none;}
+  body.in-gameplay #bar .btn-o{min-height:40px;}
 }
