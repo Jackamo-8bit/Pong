@@ -1,6 +1,6 @@
 // Network first, cache as fallback: online players always get the latest files
 // (no stale versions), offline players get the last copy they loaded.
-const CACHE = 'pong-v21';
+const CACHE = 'pong-v22';
 // Only these origins are cached. Everything else (e.g. the TURN credentials API) goes straight to the network.
 const CACHEABLE = [self.location.origin, 'https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'https://unpkg.com'];
 
