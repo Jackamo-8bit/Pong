@@ -474,18 +474,7 @@ function survDraw(now){
   fillCanvasBg(sk.bg);
   ctx.save();ctx.translate(MARGIN,MARGIN);
   if(sk.modern)drawModernBg(sk,now);
-
-  // Neon grid
-  if(sk.neonGlow){
-    ctx.save();ctx.strokeStyle=sk.midline;ctx.lineWidth=.5;ctx.globalAlpha=.12;
-    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.globalAlpha=1;ctx.restore();
-  }
-  if(sk.modern){}
-  else if(sk.deco){drawDecoBg(sk);}
-  else if(sk.zen){drawForestBg(sk,performance.now());}
-  else if(sk.bauhaus){drawBauhausBg(sk);}
+  drawSkinBg(sk,now,false);
 
   // Bottom danger line
   const bottomLine=H-30;
@@ -493,19 +482,9 @@ function survDraw(now){
   ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(0,bottomLine);ctx.lineTo(W,bottomLine);ctx.stroke();
   ctx.setLineDash([]);ctx.restore();
 
-  // Timer
-  const elapsed=(now-sv.startTime)/1000;
-  ctx.fillStyle=sk.fg;ctx.font='48px '+DISPLAY_FONT;ctx.textAlign='center';
-  ctx.save();ctx.shadowColor=sk.accent;ctx.shadowBlur=10;
-  ctx.fillText(elapsed.toFixed(1)+'s',W/2,36);ctx.restore();
-
-  // Score
-  ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.5;
-  ctx.fillText(`bricks: ${sv.score}`,W/2,52);ctx.globalAlpha=1;
-
   // Player name
   const name=survTurn==='left'?nameLeft:nameRight;
-  ctx.font='16px '+UI_FONT;ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;
+  ctx.font='16px '+sk.text;ctx.fillStyle=sk.fg;ctx.globalAlpha=.4;
   ctx.fillText(name,W/2,H-6);ctx.globalAlpha=1;
 
   // Draw bricks
@@ -536,7 +515,7 @@ function survDraw(now){
 
   // Draw paddle (horizontal)
   const px=sv.paddle.x,py=H-24,pw=sv.paddle.w,ph=sv.paddle.h;
-  ctx.fillStyle=sk.modern?sk.accent:sk.fg;
+  ctx.fillStyle=sk.modern?sk.accent:sk.paddleShape==='bauhaus'?'#d62718':sk.fg;
   if(sk.paddleShape==='rounded'){ctx.beginPath();ctx.roundRect(px,py,pw,ph,6);ctx.fill();}
   else ctx.fillRect(px,py,pw,ph);
   if(sk.neonGlow){
@@ -767,19 +746,24 @@ function survDraw(now){
   // Draw particles
   drawParticles();
 
+  // Timer and brick count, on a plate so the descending bricks never hide them
+  const elapsed=(now-sv.startTime)/1000;
+  ctx.save();ctx.globalAlpha=.88;ctx.fillStyle=sk.bg;
+  ctx.beginPath();ctx.roundRect(W/2-78,4,156,56,6);ctx.fill();ctx.restore();
+  ctx.fillStyle=sk.fg;ctx.font='48px '+sk.display;ctx.textAlign='center';
+  ctx.save();scoreGlow(sk);
+  ctx.fillText(elapsed.toFixed(1)+'s',W/2,36);ctx.restore();
+  ctx.font='16px '+sk.text;ctx.fillStyle=sk.fg;ctx.globalAlpha=.6;
+  ctx.fillText(`bricks: ${sv.score}`,W/2,54);ctx.globalAlpha=1;
+
   // Active power-up HUD
   drawActivePuHud(now);
 
-  // Mode label
-  ctx.save();ctx.font='14px '+UI_FONT;ctx.fillStyle='#22c55e';
-  ctx.globalAlpha=.7;ctx.textAlign='left';ctx.fillText('SURVIVAL',6,14);
-  ctx.globalAlpha=1;ctx.restore();
-
   // Pause overlay
   if(paused){
-    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
-    ctx.fillStyle=sk.fg;ctx.font='72px '+DISPLAY_FONT;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
-    ctx.font='18px '+UI_FONT;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
+    ctx.fillStyle=sk.veil||'rgba(0,0,0,.6)';ctx.fillRect(-MARGIN,-MARGIN,W+MARGIN*2,H+MARGIN*2);
+    ctx.fillStyle=sk.fg;ctx.font='72px '+sk.display;ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2-6);
+    ctx.font='18px '+sk.text;ctx.fillStyle=sk.accent;ctx.fillText('Press P to resume',W/2,H/2+26);
   }
 
   ctx.restore();
