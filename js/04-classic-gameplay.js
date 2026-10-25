@@ -108,7 +108,8 @@ function togglePause(fromNet){
   // Online: pause both players together. The guest never runs physics; its render loop just holds the ball.
   if(onlineRole&&!fromNet&&onlineConn&&onlineConn.open)onlineConn.send({type:'pause',on:paused});
   if(onlineRole==='guest')return;
-  if(!paused){lastFrameTime=0;animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);}
+  // Survival's loop keeps ticking while paused, so cancel it first or resuming would run two loops
+  if(!paused){cancelAnimationFrame(animId);lastFrameTime=0;animId=requestAnimationFrame(gameMode==='survival'?survUpdate:update);}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -277,13 +278,15 @@ const touchIndRight=document.getElementById('touch-ind-right');
 let _touchSetup=false;
 function setupTouch(){
   if(_touchSetup)return;_touchSetup=true;
-  const wrap=document.getElementById('canvas-wrap');
-  wrap.addEventListener('touchstart',e=>{e.preventDefault();handleTouch(e);},{passive:false});
-  wrap.addEventListener('touchmove', e=>{e.preventDefault();handleTouch(e);},{passive:false});
-  wrap.addEventListener('touchend',  e=>{e.preventDefault();
+  // The whole game screen takes touches (thumbs rest at the screen edges, outside the court), except the button bar
+  const zone=document.getElementById('game-ui');
+  const onBar=e=>e.target.closest&&e.target.closest('#bar');
+  zone.addEventListener('touchstart',e=>{if(onBar(e))return;e.preventDefault();handleTouch(e);},{passive:false});
+  zone.addEventListener('touchmove', e=>{if(onBar(e))return;e.preventDefault();handleTouch(e);},{passive:false});
+  zone.addEventListener('touchend',  e=>{if(onBar(e))return;e.preventDefault();
     Array.from(e.changedTouches).forEach(t=>{
       const rect=canvas.getBoundingClientRect();
-      const side=t.clientX<rect.left+rect.width/2?'left':'right';
+      const side=touchSide(t,rect);
       touchY[side]=null;
       touchX=null;
       const ind=side==='left'?touchIndLeft:touchIndRight;
@@ -299,19 +302,27 @@ function setupTouch(){
     });
   },{passive:false});
 }
+// One player on this device: any touch moves their paddle. Two local players split the screen in half.
+function touchSide(t,rect){
+  if(onlineRole)return onlineRole==='host'?'left':'right';
+  if(tourney){if(tourneyAI.right&&!tourneyAI.left)return 'left';if(tourneyAI.left&&!tourneyAI.right)return 'right';}
+  else if(mode==='ai')return 'left';
+  return t.clientX<rect.left+rect.width/2?'left':'right';
+}
 function handleTouch(e){
   const rect=canvas.getBoundingClientRect();
   const scaleY=(H+MARGIN*2)/rect.height,scaleX=(W+MARGIN*2)/rect.width;
   Array.from(e.touches).forEach(t=>{
-    const side=t.clientX<rect.left+rect.width/2?'left':'right';
+    const side=touchSide(t,rect);
     touchY[side]=(t.clientY-rect.top)*scaleY-MARGIN;
     // Track X for survival mode horizontal paddle (use first touch)
     touchX=(t.clientX-rect.left)*scaleX-MARGIN;
     // Visual feedback (account for CSS scale)
     const ind=side==='left'?touchIndLeft:touchIndRight;
     ind.classList.add('active');
-    ind.style.left=((t.clientX-rect.left)/canvasScale-20)+'px';
-    ind.style.top=((t.clientY-rect.top)/canvasScale-20)+'px';
+    // Marker sits where the finger is, kept on the court (the canvas is sized in CSS pixels, not transformed)
+    ind.style.left=(Math.max(0,Math.min(rect.width,t.clientX-rect.left))-20)+'px';
+    ind.style.top=(Math.max(0,Math.min(rect.height,t.clientY-rect.top))-20)+'px';
     const sk=SKINS[currentSkin];
     ind.style.borderColor=sk.accent;
     ind.style.background=sk.accent.replace(')',',0.1)').replace('rgb','rgba');

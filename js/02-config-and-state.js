@@ -260,6 +260,7 @@ function fillCanvasBg(color){ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fi
 
 // Responsive: scale canvas to fit viewport
 let canvasScale=1;
+const SIDE_BAR_QUERY='(max-height:500px) and (orientation:landscape)'; // keep in step with styles.css
 function fitCanvasToViewport(){
   const wrap=document.getElementById('canvas-wrap');
   const gui=document.getElementById('game-ui');
@@ -272,9 +273,11 @@ function fitCanvasToViewport(){
   const isMobile=vw<760;
 
   if(inGameplay){
-    const barH=isMobile?56:44;
-    const maxW=vw-(isMobile?4:16);
-    const maxH=vh-barH-(isMobile?4:16);
+    // Landscape phones: the button bar moves to a column in the left gutter (see CSS), so the court gets the full height
+    const sideBar=matchMedia(SIDE_BAR_QUERY).matches;
+    const barH=sideBar?0:isMobile?56:44,pad=sideBar?8:isMobile?4:16;
+    const maxW=vw-(sideBar?2*112:pad);
+    const maxH=vh-barH-pad;
     const s=Math.min(1,maxW/cw,maxH/ch);
     canvasScale=s;
     const sw=Math.floor(cw*s),sh=Math.floor(ch*s);
@@ -307,21 +310,21 @@ window.addEventListener('orientationchange',()=>setTimeout(fitCanvasToViewport,2
 // ═══════════════════════════════════════════════════════════════════
 // LANDSCAPE PROMPT (mobile only)
 // ═══════════════════════════════════════════════════════════════════
-let rotateDismissed=false, inGameplay=false;
+let rotateDismissed=false, inGameplay=false, rotatePaused=false;
 const isMobileDevice=('ontouchstart'in window)&&window.innerWidth<1024;
 
 function isPortrait(){return window.innerHeight>window.innerWidth;}
 
 function checkRotatePrompt(){
-  if(!isMobileDevice||rotateDismissed||!inGameplay){
-    document.getElementById('rotate-prompt').style.display='none';return;
-  }
-  document.getElementById('rotate-prompt').style.display=isPortrait()?'flex':'none';
+  const show=isMobileDevice&&!rotateDismissed&&inGameplay&&isPortrait();
+  document.getElementById('rotate-prompt').style.display=show?'flex':'none';
+  // Hold the game while the prompt covers the court; resume only if the prompt paused it
+  if(show&&!paused){togglePause();rotatePaused=true;}
+  else if(!show&&rotatePaused){rotatePaused=false;if(paused&&inGameplay)togglePause();}
 }
 
 function dismissRotatePrompt(){
-  rotateDismissed=true;
-  document.getElementById('rotate-prompt').style.display='none';
+  rotateDismissed=true;checkRotatePrompt();
 }
 
 function enterGameplay(){

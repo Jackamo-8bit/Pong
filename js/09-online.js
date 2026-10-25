@@ -133,7 +133,7 @@ function _getOnlineName(){
 function showOnlineLobby(){
   _olCache();
   ['menu','game-over','match-over','surv-turn','tourney-setup',
-   'tourney-bracket','tourney-winner'].forEach(id=>{
+   'tourney-bracket','tourney-winner','ladder'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
   document.getElementById('game-ui').style.display='none';
