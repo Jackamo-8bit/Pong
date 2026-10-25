@@ -105,12 +105,13 @@ function drawForestBg(sk,now){
   }
   ctx.restore();
 }
-// Neon: indigo grid, glowing magenta centre line and lit walls
-function drawNeonBg(sk){
+// Neon: indigo grid; on the Pong court also a glowing magenta net and lit walls
+function drawNeonBg(sk,court){
   ctx.save();
   ctx.strokeStyle='#2a1f66';ctx.globalAlpha=.7;ctx.lineWidth=1;
   for(let x=W/2%35;x<W;x+=35){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=H/2%35;y<H;y+=35){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  if(!court){ctx.restore();return;}
   ctx.globalAlpha=.65;ctx.shadowBlur=10;
   ctx.strokeStyle=ctx.shadowColor=sk.fg;ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,1);ctx.lineTo(W,1);ctx.moveTo(0,H-1);ctx.lineTo(W,H-1);ctx.stroke();
@@ -124,12 +125,13 @@ function drawRetroBg(sk){
   for(let y=5;y<H;y+=22)ctx.fillRect(W/2-3,y,6,11);
   ctx.restore();
 }
-function drawSkinBg(sk,now){
+// court=false (Survival's brick field) leaves out the Pong net and walls
+function drawSkinBg(sk,now,court=true){
   if(sk.deco)drawDecoBg(sk);
   else if(sk.zen)drawForestBg(sk,now);
   else if(sk.bauhaus)drawBauhausBg(sk);
-  else if(sk.neonGlow)drawNeonBg(sk);
-  else if(!sk.modern)drawRetroBg(sk);
+  else if(sk.neonGlow)drawNeonBg(sk,court);
+  else if(!sk.modern&&court)drawRetroBg(sk);
 }
 // Retro scores: chunky 3x5 block digits like the original arcade
 const BLOCK_DIGITS=['111101101101111','010010010010010','111001111100111','111001111001111','101101111001001','111100111001111','111100111101111','111001001001001','111101111101111','111101111001111'];

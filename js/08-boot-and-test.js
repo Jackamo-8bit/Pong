@@ -88,9 +88,7 @@ setupTouch();
 fitCanvasToViewport();
 runIntro();
 
-// Prevent stale cached game files while the visual theme is evolving.
+// Offline support. sw.js is network-first, so online players never get stale files.
 if('serviceWorker'in navigator){
-  navigator.serviceWorker.getRegistrations()
-    .then(regs=>regs.forEach(reg=>reg.unregister()))
-    .catch(e=>console.warn('SW cleanup failed',e));
+  navigator.serviceWorker.register('sw.js').catch(e=>console.warn('Offline support unavailable',e));
 }
