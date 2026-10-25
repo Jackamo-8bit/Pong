@@ -185,3 +185,37 @@ const SOUNDS={
 };
 // Apply haptics to all sound sets
 for(const k of Object.keys(SOUNDS))SOUNDS[k]=withHaptics(SOUNDS[k]);
+
+// ═══════════════════════════════════════════════════════════════════
+// MUSIC: a short chord loop per skin, synthesised live (no audio files).
+// Plays during matches only, and stops while paused, muted or switched off in Settings.
+// ═══════════════════════════════════════════════════════════════════
+const CHORD={M:[0,4,7,12],m:[0,3,7,12],M7:[0,4,7,11],m7:[0,3,7,10],d7:[0,4,7,10],s:[0,2,7,12]};
+// div: steps per beat. chords: [semitones from root, quality], one bar each.
+// arp: chord-tone index per step (null = rest). bass: steps in each bar that get a bass note.
+const MUSIC={
+  retro:   {bpm:140,div:4,root:220,lead:'square',  bassW:'square',  lv:.035,len:.8, chords:[[0,'m'],[-4,'M'],[3,'M'],[-2,'M']],arp:[0,1,2,3,2,1],bass:[0,4,8,12]},
+  modern:  {bpm:108,div:2,root:262,lead:'sine',    bassW:'triangle',lv:.06, len:1.6,chords:[[0,'M7'],[9,'m7'],[5,'M7'],[7,'d7']],arp:[0,2,null,1,3,null,2,null],bass:[0,3,6]},
+  abstract:{bpm:96, div:2,root:196,lead:'sawtooth',bassW:'square',  lv:.025,len:.6, chords:[[0,'s'],[6,'s'],[1,'s'],[7,'s']],arp:[0,null,3,1,null,2,null,null,3],bass:[0,5]},
+  forest:  {bpm:66, div:2,root:196,lead:'sine',    bassW:'sine',    lv:.07, len:3,  chords:[[0,'s'],[5,'s'],[-3,'s'],[-5,'s']],arp:[0,null,2,null,1,null,3,null],bass:[0]},
+  neon:    {bpm:100,div:4,root:165,lead:'triangle',bassW:'sawtooth',lv:.04, len:.9, chords:[[0,'m'],[-4,'M'],[-7,'M'],[-2,'M']],arp:[0,1,2,1,3,2,1,2],bass:[0,2,4,6,8,10,12,14]},
+  deco:    {bpm:120,div:2,root:220,lead:'triangle',bassW:'sine',    lv:.05, len:1.2,chords:[[2,'m7'],[7,'d7'],[0,'M7'],[9,'d7']],arp:[0,1,2,3,2,null,1,null],bass:[0,2,4,6],swing:.33}
+};
+let _musicStep=0,_musicNext=0;
+function _musicTick(){
+  const tr=MUSIC[currentSkin];
+  if(!tr||!inGameplay||paused||muted||SETTINGS.music===false||document.hidden||!audioCtx){_musicNext=0;return;}
+  const ac=audioCtx,stepDur=60/tr.bpm/tr.div,bar=4*tr.div,f=n=>tr.root*2**(n/12);
+  if(_musicNext<ac.currentTime){_musicNext=ac.currentTime+.05;_musicStep=0;} // (re)start from the top
+  while(_musicNext<ac.currentTime+.2){
+    const s=_musicStep,[root,q]=tr.chords[Math.floor(s/bar)%tr.chords.length],tones=CHORD[q];
+    const t=_musicNext+(s%2&&tr.swing?tr.swing*stepDur:0),a=tr.arp[s%tr.arp.length];
+    if(a!=null)playTone(f(root+tones[a]+12),tr.lead,stepDur*tr.len,tr.lv,t);
+    if(tr.bass.includes(s%bar)){ // bass rings until the next bass note
+      const next=tr.bass.find(x=>x>s%bar)??bar+tr.bass[0];
+      playTone(f(root-12),tr.bassW,(next-s%bar)*stepDur*.9,tr.lv*1.6,t);
+    }
+    _musicStep++;_musicNext+=stepDur;
+  }
+}
+setInterval(_musicTick,50);

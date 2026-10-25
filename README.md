@@ -11,7 +11,8 @@ A browser-based Pong game with multiple modes, themes, power-ups, tournaments, a
 - Multiple visual skins, including the Modern pixel theme
 - Power-ups with pixel-style icons and effects
 - Local hall of fame saved in the browser
-- Settings for volume, vibration and reduced motion, remembered between visits
+- Music for each skin
+- Settings for volume, music, vibration and reduced motion, remembered between visits
 - Mobile touch controls and installable PWA support, playable offline after the first visit (except online matches)
 
 ## How to Run

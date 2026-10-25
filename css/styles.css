@@ -12,7 +12,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{height:100%;overflow:hidden;background:var(--night);}
-body{min-height:100%;min-height:100dvh;overflow:auto;-webkit-overflow-scrolling:touch;color:var(--chalk);
+body{height:100%;overflow:auto;-webkit-overflow-scrolling:touch;color:var(--chalk);
   background:radial-gradient(circle at 50% 0%,var(--slate) 0%,var(--night) 58%,#0b111c 100%) fixed;}
 body.in-gameplay{overflow:hidden;}
 body.in-gameplay #pw{height:100vh;height:100dvh;padding:0;}

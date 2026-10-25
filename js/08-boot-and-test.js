@@ -82,7 +82,7 @@ function testSlowSpeed(){if(state){const spd=2;const ang=Math.atan2(state.ball.v
 // ═══════════════════════════════════════════════════════════════════
 decoratePongButtons();buildSkinGrid();applyMenuSkin();
 setWin(7);setDiff('medium');setMatch(1);setGameMode('classic');
-setVolume(SETTINGS.vol??80);setHaptics(SETTINGS.haptics!==false,false);setMotion(prefersReducedMotion,false);
+setVolume(SETTINGS.vol??80);setMusic(SETTINGS.music!==false,false);setHaptics(SETTINGS.haptics!==false,false);setMotion(prefersReducedMotion,false);
 // Vibration only works on touch devices that support it (not iPhones)
 if(!navigator.vibrate||matchMedia('(hover:hover)').matches)document.querySelectorAll('.haptic-row').forEach(el=>el.hidden=true);
 buildLeaderboard();
